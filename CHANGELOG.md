@@ -1,0 +1,50 @@
+# Journal des versions
+
+Le numéro affiché dans **Réglages** (et dans la colonne latérale sur grand écran)
+correspond à celui de `js/version.js`. Le cache hors ligne (`sw.js`) porte le même
+numéro : le changer suffit à faire récupérer la nouvelle version à l'app installée.
+
+## 1.4.0 — mise en page adaptative
+
+- Colonne latérale de navigation à partir de 900 px, à la place de la barre d'onglets
+- Contenu élargi à 1120 px, en-tête aligné sur la même largeur
+- Feuilles modales glissables au doigt sur mobile, boîtes de dialogue centrées sur grand écran
+- Grilles dépliées : jusqu'à 4 recettes par ligne, 3 jours de planning et 3 rayons côte à côte
+- Bouton d'ajout déplié en pastille « Nouvelle recette » sur grand écran
+- États de survol réservés aux appareils à souris
+- Vérifié de 320 px à 1920 px, sans débordement horizontal
+
+## 1.3.0 — partage et apports nutritionnels
+
+- Partage d'une recette en texte, au format que l'import sait relire
+- Partage par lien : la recette est encodée dans l'URL, rien ne transite par un serveur
+- Table de composition de 225 aliments : calories et macros par portion, répartition de
+  l'énergie, fibres, part d'un repère de 2 000 kcal
+- Calories par personne et par jour sur le planning
+- Interrupteur d'affichage des apports dans les Réglages
+- Extraction de `measure.js` : conversions partagées par les moteurs prix et nutrition
+
+## 1.2.0 — import et bibliothèque
+
+- « Coller depuis une note » : lecture d'une recette en texte libre (titre, portions, temps,
+  sections, tirets, numérotation, `2 c. à s. d'huile`, `½ citron`, `200g farine`)
+- « Parcourir des idées » : 49 recettes filtrables par catégorie, temps et budget
+- Le bouton « + » propose désormais trois chemins d'ajout
+- Corrections du barème : poids net par type de conserve, boissons préparées,
+  bouillon reconstitué, rapprochement au singulier des deux côtés
+
+## 1.1.0 — estimation des prix
+
+- Barème indicatif Intermarché · Toulouse (221 produits)
+- Coût par recette et par portion, budget de la semaine, panier estimé et « reste à prendre »
+- `Réglages → Mes prix` : correction d'un prix, ajout d'un produit, retour au barème d'origine
+- Interrupteur d'affichage des prix
+
+## 1.0.0 — première version
+
+- Recettes avec catégories personnalisables, recherche par nom ou par ingrédient, favoris
+- Planning de la semaine midi/dîner avec nombre de convives par repas
+- Liste de courses générée depuis le planning : quantités mises à l'échelle, agrégées
+  et rangées par rayon
+- Ajout rapide en langage naturel, partage de la liste, export/import JSON
+- PWA installable, fonctionnement hors ligne, thème clair/sombre

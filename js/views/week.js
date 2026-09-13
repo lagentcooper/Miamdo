@@ -85,7 +85,7 @@ export function render({ topbar, view }) {
         <p>Ajoute des recettes aux jours qui t’arrangent, puis génère la liste en un tap.</p>
         <button type="button" class="btn" data-add-day="${isoList[0]}">${icon('plus')} Planifier un repas</button>
       </div>`}
-    <div style="margin-top:16px">${days.map(dayCard).join('')}</div>
+    <div class="day-grid" style="margin-top:16px">${days.map(dayCard).join('')}</div>
     ${planned ? `<button type="button" class="btn btn-block btn-danger" style="margin-top:6px" data-clear-week>${icon('trash')} Vider la semaine</button>` : ''}`;
 
   /* interactions */

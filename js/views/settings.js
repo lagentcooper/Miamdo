@@ -7,8 +7,9 @@ import { openCategoryEditor } from './recipes.js';
 import { openPriceManager } from './pricesView.js';
 import { allEntries, PRICE_META } from '../prices.js';
 import { NUTRITION_META } from '../nutrition.js';
+import { APP_VERSION } from '../version.js';
 
-export const APP_VERSION = '1.0.0';
+export { APP_VERSION };
 
 export function render({ topbar, view }) {
   const state = store.getState();

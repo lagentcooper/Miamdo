@@ -132,6 +132,15 @@ que l'ordinateur soit allumé. Pratique pour essayer, pas pour tous les jours.
   **temps** (20 / 45 min max) et **budget** (2 / 4 € par personne max), avec le coût
   estimé affiché avant l'ajout
 
+**Sur grand écran**
+
+L'app n'est pas qu'une vue mobile étirée : à partir de 900 px, la barre d'onglets du bas
+devient une **colonne latérale** (navigation + compteur de courses), le contenu s'élargit,
+les feuilles modales deviennent des **boîtes de dialogue centrées**, et les grilles se
+déplient — jusqu'à 4 recettes par ligne, 3 jours de planning côte à côte, 3 rayons de
+courses en parallèle. Les états de survol apparaissent sur les appareils à souris.
+Vérifié de 320 px à 1920 px sans débordement horizontal.
+
 **Le reste**
 - Mode sombre automatique, gestes iOS (feuilles modales qu'on referme en glissant)
 - Annulation (« Annuler » dans les notifications) sur toutes les actions destructives
@@ -183,8 +192,15 @@ tools/render-icons.mjs  régénère les PNG depuis le SVG (npm i -D playwright)
 }
 ```
 
+### Versions
+
+Le numéro de version vit dans `js/version.js` (affiché dans Réglages et dans la colonne
+latérale). Il est repris à l'identique dans `sw.js` — c'est ce qui déclenche la récupération
+de la nouvelle version par l'app installée. Voir [CHANGELOG.md](CHANGELOG.md).
+
 ### Mettre à jour l'app installée
 
 Après un `git push`, relancer le workflow Pages puis rouvrir Miamdo sur l'iPhone : le service
 worker récupère la nouvelle version au lancement suivant. Les données ne sont jamais touchées.
-Si tu changes la liste des fichiers, pense à bumper `VERSION` dans `sw.js`.
+Après une modification, incrémente `APP_VERSION` dans `js/version.js`, reporte le même
+numéro dans `VERSION` (`sw.js`) et ajoute une entrée au CHANGELOG.
