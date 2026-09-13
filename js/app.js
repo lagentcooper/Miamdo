@@ -8,6 +8,7 @@ import * as shopping from './views/shopping.js';
 import * as settings from './views/settings.js';
 import { readSharedLink, openSharedRecipe } from './views/share.js';
 import { openRecipeEditor } from './views/recipes.js';
+import { APP_VERSION } from './version.js';
 
 const TABS = [
   { id: 'recipes', label: 'Recettes', ic: 'book', view: recipes },
@@ -24,7 +25,7 @@ app.innerHTML = `
       <span>Miamdo</span>
     </a>
     <nav class="snav" id="snav" role="tablist"></nav>
-    <p class="sidebar-foot">Tes données restent sur cet appareil.</p>
+    <p class="sidebar-foot">Miamdo ${APP_VERSION}<br>Tes données restent sur cet appareil.</p>
   </aside>
   <div class="main">
     <header class="topbar" id="topbar"></header>

@@ -192,8 +192,15 @@ tools/render-icons.mjs  régénère les PNG depuis le SVG (npm i -D playwright)
 }
 ```
 
+### Versions
+
+Le numéro de version vit dans `js/version.js` (affiché dans Réglages et dans la colonne
+latérale). Il est repris à l'identique dans `sw.js` — c'est ce qui déclenche la récupération
+de la nouvelle version par l'app installée. Voir [CHANGELOG.md](CHANGELOG.md).
+
 ### Mettre à jour l'app installée
 
 Après un `git push`, relancer le workflow Pages puis rouvrir Miamdo sur l'iPhone : le service
 worker récupère la nouvelle version au lancement suivant. Les données ne sont jamais touchées.
-Si tu changes la liste des fichiers, pense à bumper `VERSION` dans `sw.js`.
+Après une modification, incrémente `APP_VERSION` dans `js/version.js`, reporte le même
+numéro dans `VERSION` (`sw.js`) et ajoute une entrée au CHANGELOG.
