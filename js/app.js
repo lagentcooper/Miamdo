@@ -18,13 +18,24 @@ const TABS = [
 
 const app = document.getElementById('app');
 app.innerHTML = `
-  <header class="topbar" id="topbar"></header>
-  <main class="view" id="view"></main>
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="#recipes">
+      <img src="./assets/icons/icon-192.png" alt="" width="34" height="34">
+      <span>Miamdo</span>
+    </a>
+    <nav class="snav" id="snav" role="tablist"></nav>
+    <p class="sidebar-foot">Tes données restent sur cet appareil.</p>
+  </aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <main class="view" id="view"></main>
+  </div>
   <nav class="tabbar" id="tabbar" role="tablist"></nav>`;
 
 let topbar = document.getElementById('topbar');
 let view = document.getElementById('view');
 const tabbar = document.getElementById('tabbar');
+const snav = document.getElementById('snav');
 
 /**
  * Remplace l'en-tête et la zone de contenu par des nœuds neufs avant chaque
@@ -54,12 +65,24 @@ const scrollMemory = {};
 
 function renderTabs() {
   const todo = store.getState().list.filter((i) => !i.checked).length;
+  const badge = (id) => (id === 'shopping' && todo ? `<span class="badge">${todo > 99 ? '99+' : todo}</span>` : '');
+
+  // barre du bas (mobile)
   tabbar.innerHTML = TABS.map((t) => `
     <button type="button" class="tab ${t.id === current ? 'active' : ''}" data-tab="${t.id}"
       role="tab" aria-selected="${t.id === current}">
       ${icon(t.ic)}
-      ${t.id === 'shopping' && todo ? `<span class="badge">${todo > 99 ? '99+' : todo}</span>` : ''}
+      ${badge(t.id)}
       <span>${t.label}</span>
+    </button>`).join('');
+
+  // colonne latérale (écrans larges)
+  snav.innerHTML = TABS.map((t) => `
+    <button type="button" class="snav-item ${t.id === current ? 'active' : ''}" data-tab="${t.id}"
+      role="tab" aria-selected="${t.id === current}">
+      ${icon(t.ic)}
+      <span class="label">${t.label}</span>
+      ${badge(t.id)}
     </button>`).join('');
 }
 
@@ -105,7 +128,7 @@ function navigate(id, { push = true } = {}) {
   window.scrollTo({ top: scrollMemory[id] || 0, behavior: 'instant' in window ? 'instant' : 'auto' });
 }
 
-tabbar.addEventListener('click', (e) => {
+function onNavClick(e) {
   const tab = e.target.closest('[data-tab]');
   if (!tab) return;
   if (tab.dataset.tab === current) {
@@ -113,7 +136,9 @@ tabbar.addEventListener('click', (e) => {
     return;
   }
   navigate(tab.dataset.tab);
-});
+}
+tabbar.addEventListener('click', onNavClick);
+snav.addEventListener('click', onNavClick);
 
 window.addEventListener('hashchange', () => {
   const shared = readSharedLink(location.hash);

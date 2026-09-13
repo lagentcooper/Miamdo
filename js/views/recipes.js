@@ -107,7 +107,9 @@ export function render({ topbar, view }) {
   topbar.innerHTML = `
     <div class="topbar-row">
       <h1 class="title">Recettes<small>${state.recipes.length} recette${state.recipes.length > 1 ? 's' : ''} dans ton carnet</small></h1>
-      <button type="button" class="icon-btn accent" data-new aria-label="Nouvelle recette">${icon('plus')}</button>
+      <button type="button" class="icon-btn accent btn-new" data-new aria-label="Nouvelle recette">
+        ${icon('plus')}<span class="only-wide">Nouvelle recette</span>
+      </button>
     </div>
     <div class="search" style="margin-top:10px">
       ${icon('search')}

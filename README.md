@@ -132,6 +132,15 @@ que l'ordinateur soit allumé. Pratique pour essayer, pas pour tous les jours.
   **temps** (20 / 45 min max) et **budget** (2 / 4 € par personne max), avec le coût
   estimé affiché avant l'ajout
 
+**Sur grand écran**
+
+L'app n'est pas qu'une vue mobile étirée : à partir de 900 px, la barre d'onglets du bas
+devient une **colonne latérale** (navigation + compteur de courses), le contenu s'élargit,
+les feuilles modales deviennent des **boîtes de dialogue centrées**, et les grilles se
+déplient — jusqu'à 4 recettes par ligne, 3 jours de planning côte à côte, 3 rayons de
+courses en parallèle. Les états de survol apparaissent sur les appareils à souris.
+Vérifié de 320 px à 1920 px sans débordement horizontal.
+
 **Le reste**
 - Mode sombre automatique, gestes iOS (feuilles modales qu'on referme en glissant)
 - Annulation (« Annuler » dans les notifications) sur toutes les actions destructives

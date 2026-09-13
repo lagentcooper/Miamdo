@@ -96,12 +96,12 @@ export function render({ topbar, view }) {
           </div>
         </div>` : ''}
 
-      ${group(todo).map((g) => `
+      <div class="aisle-grid">${group(todo).map((g) => `
         <section class="aisle">
           <div class="aisle-head">${g.rayon.emoji} ${escapeHtml(g.rayon.name)}
             <span class="n">${withPrices && groupTotal(g.items) ? `≈ ${formatEuro(groupTotal(g.items))} · ` : ''}${g.items.length}</span></div>
           <div class="rows">${g.items.map(itemRow).join('')}</div>
-        </section>`).join('')}
+        </section>`).join('')}</div>
 
       ${done.length ? `
         <div class="section-title">Dans le panier <span class="count">· ${done.length}</span></div>
