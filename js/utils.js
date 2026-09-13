@@ -103,6 +103,96 @@ export function formatQty(qty, unit) {
   return label ? `${n} ${label}` : n;
 }
 
+/* ------------------------------------------------- lecture d'une quantité */
+
+// Écritures rencontrées dans les recettes → unité interne.
+const UNIT_ALIASES = {
+  g: 'g', gr: 'g', gramme: 'g', grammes: 'g',
+  kg: 'kg', kilo: 'kg', kilos: 'kg', kilogramme: 'kg', kilogrammes: 'kg',
+  ml: 'ml', millilitre: 'ml', millilitres: 'ml',
+  cl: 'cl', centilitre: 'cl', centilitres: 'cl',
+  dl: 'cl', l: 'l', litre: 'l', litres: 'l',
+  cas: 'cas', cs: 'cas', 'c a s': 'cas', 'c a soupe': 'cas',
+  'cuillere a soupe': 'cas', 'cuilleres a soupe': 'cas', 'cuillere a s': 'cas',
+  cac: 'cac', cc: 'cac', 'c a c': 'cac', 'c a cafe': 'cac',
+  'cuillere a cafe': 'cac', 'cuilleres a cafe': 'cac',
+  piece: 'piece', pieces: 'piece', pc: 'piece', unite: 'piece', unites: 'piece',
+  pincee: 'pincee', pincees: 'pincee',
+  gousse: 'gousse', gousses: 'gousse',
+  tranche: 'tranche', tranches: 'tranche',
+  botte: 'botte', bottes: 'botte', bouquet: 'botte', brin: 'botte', brins: 'botte',
+  sachet: 'sachet', sachets: 'sachet', paquet: 'sachet', paquets: 'sachet',
+  boite: 'boite', boites: 'boite', conserve: 'boite', pot: 'boite', pots: 'boite',
+};
+
+const ALIAS_LIST = Object.entries(UNIT_ALIASES)
+  .map(([alias, unit]) => ({ words: alias.split(' '), unit }))
+  .sort((a, b) => b.words.length - a.words.length);
+
+const FRACTIONS = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3, '⅛': 0.125 };
+
+function readNumber(token) {
+  if (FRACTIONS[token]) return FRACTIONS[token];
+  const mixed = token.match(/^(\d+)\s*([½¼¾⅓⅔⅛])$/);
+  if (mixed) return Number(mixed[1]) + FRACTIONS[mixed[2]];
+  const ratio = token.match(/^(\d+)\s*\/\s*(\d+)$/);
+  if (ratio) return Number(ratio[1]) / Number(ratio[2]);
+  const n = parseFloat(token.replace(',', '.'));
+  return isFinite(n) ? n : null;
+}
+
+/** Retire « de », « d' », « du », « la »… en tête du nom d'un ingrédient. */
+function stripArticles(tokens) {
+  const t = [...tokens];
+  while (t.length) {
+    const first = t[0];
+    if (/^[dl]['’]/i.test(first)) {
+      t[0] = first.replace(/^[dl]['’]\s*/i, '');
+      if (!t[0]) t.shift();
+      break;
+    }
+    if (/^(de|du|des|le|la|les|d)$/i.test(first)) { t.shift(); continue; }
+    break;
+  }
+  return t;
+}
+
+/**
+ * Lit « 2 c. à s. d'huile d'olive », « 200g farine », « ½ citron », « sel ».
+ * → { qty, unit, name }
+ */
+export function parseQuantity(input) {
+  let text = String(input || '').trim().replace(/^[-–—•*·]\s*/, '').trim();
+  if (!text) return null;
+  text = text.replace(/^(\d+(?:[.,]\d+)?)([a-zA-Z])/, '$1 $2'); // « 200g » → « 200 g »
+
+  let tokens = text.split(/\s+/).filter(Boolean);
+  let qty = 0;
+
+  const numeric = readNumber(tokens[0]);
+  if (numeric !== null) {
+    qty = numeric;
+    tokens = tokens.slice(1);
+    // « 1 1/2 » ou « 1 ½ »
+    const extra = tokens.length ? readNumber(tokens[0]) : null;
+    if (extra !== null && extra < 1) { qty += extra; tokens = tokens.slice(1); }
+  }
+
+  let unit = qty ? 'piece' : 'qs';
+  for (const alias of ALIAS_LIST) {
+    const { words } = alias;
+    if (tokens.length >= words.length && words.every((w, i) => normalize(tokens[i]) === w)) {
+      unit = alias.unit;
+      tokens = tokens.slice(words.length);
+      break;
+    }
+  }
+
+  const name = stripArticles(tokens).join(' ').replace(/[,;.]+$/, '').trim();
+  if (!name) return null;
+  return { qty, unit, name: name.charAt(0).toUpperCase() + name.slice(1) };
+}
+
 /* ------------------------------------------------------------------ rayons */
 
 export const RAYONS = [

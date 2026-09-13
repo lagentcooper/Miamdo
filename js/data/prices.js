@@ -106,6 +106,7 @@ export const PRICE_CATALOG = [
   { key: 'sardine', label: 'Sardines', unit: 'kg', price: 8.90 },
   { key: 'crevette', label: 'Crevettes', unit: 'kg', price: 16.90 },
   { key: 'moule', label: 'Moules', unit: 'kg', price: 4.50 },
+  { key: 'gambas', label: 'Gambas', unit: 'kg', price: 19.90 },
   { key: 'poisson', label: 'Poisson', unit: 'kg', price: 18.00 },
 
   /* --------------------------------------------------- crèmerie & œufs */
@@ -133,6 +134,9 @@ export const PRICE_CATALOG = [
   { key: 'ricotta', label: 'Ricotta', unit: 'kg', price: 7.50 },
   { key: 'mascarpone', label: 'Mascarpone', unit: 'kg', price: 8.90 },
   { key: 'raclette', label: 'Raclette', unit: 'kg', price: 12.50 },
+  { key: 'reblochon', label: 'Reblochon', unit: 'piece', price: 6.90 },
+  { key: 'fromage frais', label: 'Fromage frais', unit: 'kg', price: 7.90 },
+  { key: 'tofu', label: 'Tofu', unit: 'kg', price: 8.90 },
   { key: 'fromage', label: 'Fromage', unit: 'kg', price: 13.00 },
 
   /* ----------------------------------------------------- épicerie salée */
@@ -178,6 +182,9 @@ export const PRICE_CATALOG = [
   { key: 'sauce soja', label: 'Sauce soja', unit: 'l', price: 5.90 },
   { key: 'concentre de tomate', label: 'Concentré de tomate', unit: 'kg', price: 3.50 },
   { key: 'coulis', label: 'Coulis de tomate', unit: 'kg', price: 1.90 },
+  { key: 'bouillon de legumes', label: 'Bouillon de légumes (reconstitué)', unit: 'l', price: 0.30 },
+  { key: 'bouillon de boeuf', label: 'Bouillon de bœuf (reconstitué)', unit: 'l', price: 0.30 },
+  { key: 'bouillon de volaille', label: 'Bouillon de volaille (reconstitué)', unit: 'l', price: 0.30 },
   { key: 'bouillon', label: 'Bouillon cube', unit: 'piece', price: 0.15 },
   { key: 'olive', label: 'Olives', unit: 'kg', price: 8.90 },
   { key: 'cornichon', label: 'Cornichons', unit: 'kg', price: 4.90 },
@@ -191,6 +198,10 @@ export const PRICE_CATALOG = [
   { key: 'tahini', label: 'Tahini', unit: 'kg', price: 12.90 },
   { key: 'miso', label: 'Miso', unit: 'kg', price: 15.00 },
   { key: 'levure', label: 'Levure', unit: 'kg', price: 22.00 },
+  { key: 'pesto', label: 'Pesto', unit: 'kg', price: 12.90 },
+  { key: 'gnocchi', label: 'Gnocchis', unit: 'kg', price: 4.50 },
+  { key: 'piment', label: 'Piment', unit: 'kg', price: 45.00 },
+  { key: 'cognac', label: 'Cognac', unit: 'l', price: 30.00 },
 
   /* ---------------------------------------------------- épicerie sucrée */
   { key: 'sucre roux', label: 'Sucre roux', unit: 'kg', price: 2.20 },
@@ -204,6 +215,7 @@ export const PRICE_CATALOG = [
   { key: 'compote', label: 'Compote', unit: 'kg', price: 2.50 },
   { key: 'pate a tartiner', label: 'Pâte à tartiner', unit: 'kg', price: 6.50 },
   { key: 'speculoos', label: 'Spéculoos', unit: 'kg', price: 7.50 },
+  { key: 'biscuit cuillere', label: 'Biscuits cuillère', unit: 'kg', price: 9.90 },
   { key: 'biscuit', label: 'Biscuits', unit: 'kg', price: 6.90 },
   { key: 'sirop', label: 'Sirop', unit: 'l', price: 3.50 },
   { key: 'vanille', label: 'Vanille', unit: 'kg', price: 90.00 },
@@ -240,8 +252,10 @@ export const PRICE_CATALOG = [
   { key: 'soda', label: 'Soda', unit: 'l', price: 1.20 },
   { key: 'limonade', label: 'Limonade', unit: 'l', price: 1.30 },
   { key: 'cidre', label: 'Cidre', unit: 'l', price: 3.00 },
-  { key: 'cafe', label: 'Café', unit: 'kg', price: 18.00 },
-  { key: 'the', label: 'Thé', unit: 'kg', price: 40.00 },
+  // `volumePrice` : prix de la boisson préparée, utilisé quand la recette
+  // exprime l'ingrédient en volume (« 30 cl de café »).
+  { key: 'cafe', label: 'Café', unit: 'kg', price: 18.00, volumePrice: 0.70 },
+  { key: 'the', label: 'Thé', unit: 'kg', price: 40.00, volumePrice: 0.40 },
 
   /* -------------------------------------------------- maison & entretien */
   { key: 'papier toilette', label: 'Papier toilette', unit: 'piece', price: 0.40 },

@@ -106,6 +106,10 @@ export function openSheet({ title = '', leftLabel = 'Annuler', rightLabel = '', 
     el: sheet,
     body: sheet.querySelector('.sheet-body'),
     setTitle(t) { sheet.querySelector('h2').textContent = t; },
+    setRightLabel(t) {
+      const btn = sheet.querySelector('[data-sheet-right] b');
+      if (btn) btn.textContent = t;
+    },
     close,
   };
 

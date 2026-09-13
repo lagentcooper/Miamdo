@@ -20,6 +20,13 @@ const UNIT_TO_MEASURE = {
   boite: 400,
 };
 
+/** Contenu net d'une conserve, en grammes — une boîte de thon ≠ une boîte de tomates. */
+const BOX_WEIGHT = {
+  thon: 140, sardine: 120, mais: 285, champignon: 230, olive: 200,
+  'lait de coco': 400, 'concentre de tomate': 140, 'pate a tartiner': 400,
+  confiture: 350, yaourt: 125, creme: 200, 'creme fraiche': 200,
+};
+
 /** Poids moyen d'une pièce, en grammes. */
 const PIECE_WEIGHT = {
   oeuf: 60, citron: 100, orange: 200, pomme: 150, poire: 160, banane: 120,
@@ -30,7 +37,9 @@ const PIECE_WEIGHT = {
   burrata: 125, pain: 250, baguette: 250, 'pain pita': 60, tortilla: 45,
   wrap: 45, burger: 60, naan: 90, bagel: 85, croissant: 60, pizza: 400,
   'pate feuilletee': 230, 'pate brisee': 230, 'pate sablee': 230,
-  bouillon: 10, ail: 60, 'poulet entier': 1400,
+  bouillon: 10, ail: 60, 'poulet entier': 1400, biscuit: 8, 'biscuit cuillere': 8,
+  reblochon: 450, 'pain de mie': 25, tortilla: 45, courge: 1000, potiron: 1200,
+  brocoli: 500, 'chou': 900, poireau: 200, aubergine: 300, banane: 120,
 };
 const DEFAULT_PIECE_WEIGHT = 150;
 
@@ -63,9 +72,12 @@ export function findEntry(name) {
   const singular = ingredientKey(name);
   let best = null;
   for (const entry of allEntries()) {
-    if (plain.includes(entry.key) || singular.includes(entry.key)) {
-      if (!best || entry.key.length > best.key.length) best = entry;
-    }
+    // comparaison au singulier des deux côtés : « petits pois » ↔ « petit pois »
+    const entrySingular = ingredientKey(entry.key);
+    const hit = plain.includes(entry.key)
+      || singular.includes(entry.key)
+      || singular.includes(entrySingular);
+    if (hit && (!best || entry.key.length > best.key.length)) best = entry;
   }
   return best;
 }
@@ -76,6 +88,7 @@ function toMeasure(qty, unit, key) {
   if (family === 'masse' || family === 'volume') return toBase(qty, unit).value;
   if (family === 'piece') return qty * (PIECE_WEIGHT[key] ?? DEFAULT_PIECE_WEIGHT);
   if (family === 'qs') return 0;
+  if (family === 'boite') return qty * (BOX_WEIGHT[key] ?? UNIT_TO_MEASURE.boite);
   return qty * (UNIT_TO_MEASURE[family] ?? 0);
 }
 
@@ -97,6 +110,13 @@ export function estimateCost({ name, qty, unit }) {
   if (!entry) return { cost: null, entry: null };
   const q = Number(qty) || 0;
   if (!q) return { cost: 0, entry };
+
+  // certains produits secs se mesurent parfois préparés (« 30 cl de café »)
+  const family = (UNITS[unit] || UNITS.piece).base;
+  if (entry.volumePrice && family === 'volume') {
+    const ml = toBase(q, unit).value;
+    return { cost: Math.round((ml / 1000) * entry.volumePrice * 100) / 100, entry };
+  }
 
   let cost;
   if (entry.unit === 'piece') {

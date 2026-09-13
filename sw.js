@@ -2,7 +2,7 @@
    fonctionner hors connexion. Les données (recettes, planning, liste) vivent
    dans localStorage et ne transitent jamais par le réseau. */
 
-const VERSION = 'miamdo-v2';
+const VERSION = 'miamdo-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -11,17 +11,21 @@ const ASSETS = [
   './js/app.js',
   './js/store.js',
   './js/prices.js',
+  './js/import.js',
   './js/ui.js',
   './js/utils.js',
   './js/weekstate.js',
   './js/data/seed.js',
   './js/data/prices.js',
+  './js/data/library.js',
   './js/views/recipes.js',
   './js/views/week.js',
   './js/views/shopping.js',
   './js/views/settings.js',
   './js/views/pickers.js',
   './js/views/pricesView.js',
+  './js/views/importText.js',
+  './js/views/library.js',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
   './assets/icons/icon-maskable-512.png',

@@ -8,6 +8,8 @@ import {
 import { openDayPicker } from './pickers.js';
 import { recipeCost, formatEuro } from '../prices.js';
 import { openPriceForIngredient } from './pricesView.js';
+import { openImportSheet } from './importText.js';
+import { openLibrary } from './library.js';
 
 const ui = { query: '', filter: 'all' };
 
@@ -102,8 +104,8 @@ export function render({ topbar, view }) {
     haptic();
     rerender();
   });
-  delegate(topbar, '[data-new]', 'click', () => openRecipeEditor());
-  delegate(view, '[data-new]', 'click', () => openRecipeEditor());
+  delegate(topbar, '[data-new]', 'click', () => openAddMenu());
+  delegate(view, '[data-new]', 'click', () => openAddMenu());
   delegate(view, '[data-fav]', 'click', (e, el) => {
     e.stopPropagation();
     haptic();
@@ -117,6 +119,49 @@ export function render({ topbar, view }) {
 
 let rerender = () => {};
 export function setRerender(fn) { rerender = fn; }
+
+/* ------------------------------------------------ menu « ajouter une recette » */
+
+export function openAddMenu() {
+  openSheet({
+    title: 'Ajouter une recette',
+    leftLabel: 'Annuler',
+    render: (api) => {
+      api.body.innerHTML = `
+        <button type="button" class="row card" style="width:100%;margin-bottom:10px;border-radius:var(--r-lg)" data-scratch>
+          <span style="font-size:26px">✍️</span>
+          <span class="grow">
+            <span class="primary">Créer de zéro</span>
+            <span class="secondary">Saisir les ingrédients et les étapes</span>
+          </span>
+          ${icon('right', 'chevron')}
+        </button>
+        <button type="button" class="row card" style="width:100%;margin-bottom:10px;border-radius:var(--r-lg)" data-paste>
+          <span style="font-size:26px">📋</span>
+          <span class="grow">
+            <span class="primary">Coller depuis une note</span>
+            <span class="secondary">Miamdo lit le texte et remplit la recette</span>
+          </span>
+          ${icon('right', 'chevron')}
+        </button>
+        <button type="button" class="row card" style="width:100%;border-radius:var(--r-lg)" data-library>
+          <span style="font-size:26px">💡</span>
+          <span class="grow">
+            <span class="primary">Parcourir des idées</span>
+            <span class="secondary">Bibliothèque filtrable par catégorie, temps et budget</span>
+          </span>
+          ${icon('right', 'chevron')}
+        </button>`;
+
+      const go = (fn) => { api.close(); setTimeout(fn, 320); };
+      api.body.querySelector('[data-scratch]').addEventListener('click', () => go(() => openRecipeEditor()));
+      api.body.querySelector('[data-paste]').addEventListener('click', () =>
+        go(() => openImportSheet({ onEdit: (draft) => openRecipeEditor(draft) })));
+      api.body.querySelector('[data-library]').addEventListener('click', () =>
+        go(() => openLibrary({ onEdit: (draft) => openRecipeEditor(draft) })));
+    },
+  });
+}
 
 /* ------------------------------------------------------------------- fiche */
 
@@ -254,9 +299,9 @@ export function openRecipeDetail(id) {
 /* ----------------------------------------------------------------- éditeur */
 
 export function openRecipeEditor(existing) {
-  const isNew = !existing;
+  const isNew = !existing || !existing.id;
   const draft = existing
-    ? JSON.parse(JSON.stringify(existing))
+    ? { ...JSON.parse(JSON.stringify(existing)), id: existing.id || uid('rec') }
     : {
         id: uid('rec'), name: '', emoji: '🍽️', categoryIds: [], time: 20,
         servings: store.getState().settings.defaultServings || 2,
