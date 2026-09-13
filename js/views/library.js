@@ -5,6 +5,7 @@ import { icon, openSheet, toast, haptic } from '../ui.js';
 import { escapeHtml, formatTime, formatQty, parseQuantity, guessRayon, normalize, uid } from '../utils.js';
 import { LIBRARY, LIB_TAGS } from '../data/library.js';
 import { recipeCost, formatEuro } from '../prices.js';
+import { recipeNutrition, formatKcal } from '../nutrition.js';
 
 /** Transforme une entrée de bibliothèque en recette exploitable. */
 export function buildRecipe(entry) {
@@ -164,7 +165,14 @@ function openIdea({ entry, recipe, cost, added }, { onEdit, onAdded } = {}) {
         ${cost.total ? `
           <div class="budget" style="margin-bottom:14px">
             <div><b>≈ ${formatEuro(cost.perServing)}</b><span class="lbl">par portion</span></div>
-            <div class="right"><b>≈ ${formatEuro(cost.total)}</b><span>pour ${recipe.servings} portions</span></div>
+            <div class="right">
+              ${(() => {
+                const n = recipeNutrition(recipe, recipe.servings);
+                return n.counted
+                  ? `<b>${formatKcal(n.perServing.kcal)}</b><span>par portion</span>`
+                  : `<b>≈ ${formatEuro(cost.total)}</b><span>pour ${recipe.servings} portions</span>`;
+              })()}
+            </div>
           </div>` : ''}
 
         <button type="button" class="btn btn-primary btn-block" data-add ${added ? 'disabled' : ''}>

@@ -10,6 +10,8 @@ import { recipeCost, formatEuro } from '../prices.js';
 import { openPriceForIngredient } from './pricesView.js';
 import { openImportSheet } from './importText.js';
 import { openLibrary } from './library.js';
+import { openShareSheet } from './share.js';
+import { recipeNutrition, macroShare, formatKcal, formatGrams, shareOfDay, NUTRITION_META } from '../nutrition.js';
 
 const ui = { query: '', filter: 'all' };
 
@@ -19,6 +21,46 @@ const EMOJIS = ['🍝', '🍗', '🥗', '🐟', '🍛', '🍳', '🌶️', '🥫
 
 const catById = (id) => store.getState().categories.find((c) => c.id === id);
 const pricesShown = () => store.getState().settings.showPrices !== false;
+const nutritionShown = () => store.getState().settings.showNutrition !== false;
+
+/** Bloc « apports par portion » d'une recette. */
+export function nutritionBlock(recipe, servings) {
+  const n = recipeNutrition(recipe, servings);
+  if (!n.counted) return '';
+  const share = macroShare(n.perServing);
+  const pct = shareOfDay(n.perServing.kcal);
+  return `
+    <div class="nutri">
+      <div class="nutri-top">
+        <b>${formatKcal(n.perServing.kcal)}</b>
+        <span class="lbl">par portion</span>
+        <span class="right">${pct} % du repère ${NUTRITION_META.reference} kcal</span>
+      </div>
+      <div class="macro-bar">
+        <i style="width:${share.prot}%;background:#7C6BF0"></i>
+        <i style="width:${share.gluc}%;background:#F2B705"></i>
+        <i style="width:${share.lip}%;background:#FF6B35"></i>
+      </div>
+      <div class="macro-legend">
+        <span><i class="dot" style="background:#7C6BF0"></i> Protéines ${share.prot} %</span>
+        <span><i class="dot" style="background:#F2B705"></i> Glucides ${share.gluc} %</span>
+        <span><i class="dot" style="background:#FF6B35"></i> Lipides ${share.lip} %</span>
+      </div>
+      <div class="nutri-grid">
+        <div class="nutri-cell"><b>${formatGrams(n.perServing.prot)}</b><span>protéines</span></div>
+        <div class="nutri-cell"><b>${formatGrams(n.perServing.gluc)}</b><span>glucides</span></div>
+        <div class="nutri-cell"><b>${formatGrams(n.perServing.lip)}</b><span>lipides</span></div>
+        <div class="nutri-cell"><b>${formatGrams(n.perServing.fibres)}</b><span>fibres</span></div>
+      </div>
+    </div>
+    ${n.missing.length ? `<p class="muted" style="font-size:12px;line-height:1.5;margin:10px 2px 0">
+      Calculé sur ${n.counted} ingrédient${n.counted > 1 ? 's' : ''} sur ${recipe.ingredients.length} —
+      pas de données pour : ${n.missing.join(', ')}.</p>` : ''}
+    <p class="muted" style="font-size:12px;line-height:1.5;margin:8px 2px 0">
+      Valeurs moyennes indicatives, pour situer un plat — pas un suivi diététique.
+      Le total est calculé sur les ingrédients crus, avant cuisson.
+    </p>`;
+}
 
 /* ------------------------------------------------------------------- liste */
 
@@ -208,6 +250,7 @@ export function openRecipeDetail(id) {
           <div class="hstack" style="gap:8px">
             <button type="button" class="btn btn-primary" style="flex:1" data-add>${icon('cart')} Ajouter aux courses</button>
             <button type="button" class="btn" data-plan aria-label="Planifier">${icon('calendar')}</button>
+            <button type="button" class="btn" data-share aria-label="Partager">${icon('share')}</button>
           </div>
 
           <div class="section-title">Ingrédients <span class="count">· ${recipe.ingredients.length}</span></div>
@@ -241,6 +284,10 @@ export function openRecipeDetail(id) {
               Estimation d’après le barème Intermarché indicatif, ajustable dans Réglages → Mes prix.
             </p>` : ''}
 
+          ${nutritionShown() && recipe.ingredients.length ? `
+            <div class="section-title">Apports nutritionnels</div>
+            ${nutritionBlock(recipe, servings)}` : ''}
+
           ${recipe.steps.length ? `
             <div class="section-title">Préparation</div>
             <ol class="steps">${recipe.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}</ol>` : ''}
@@ -273,6 +320,9 @@ export function openRecipeDetail(id) {
         });
         api.body.querySelector('[data-missing]')?.addEventListener('click', () => {
           openPriceForIngredient(cost.missing[0], draw);
+        });
+        api.body.querySelector('[data-share]').addEventListener('click', () => {
+          openShareSheet(recipe, servings);
         });
         api.body.querySelector('[data-dup]').addEventListener('click', () => {
           const copy = store.duplicateRecipe(recipe.id);

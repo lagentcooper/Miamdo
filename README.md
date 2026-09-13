@@ -91,6 +91,28 @@ que l'ordinateur soit allumé. Pratique pour essayer, pas pour tous les jours.
 - Progression, articles cochés regroupés, partage de la liste par SMS/Notes (menu ⚙︎)
 - Régénérer la liste **conserve les articles ajoutés à la main**
 
+**Partager une recette**
+- **Partager la recette** : ouvre la feuille de partage iOS (Messages, Mail, Notes, WhatsApp…)
+  avec un texte propre. Ce texte est exactement le format que l'import sait relire :
+  le destinataire le recolle dans Miamdo (＋ → Coller depuis une note) et retrouve la recette
+  avec ses quantités et ses étapes
+- **Partager un lien Miamdo** : la recette est encodée *dans* l'URL (≈ 650 caractères).
+  Ouvert sur un téléphone où Miamdo est installé, le lien affiche « Recette partagée »
+  et l'ajoute en un tap. **Rien ne transite par un serveur** — pas de compte, pas de base
+- **Copier le texte**, avec aperçu de ce qui sera envoyé
+- Le partage respecte le nombre de portions affiché : tu partages la version pour 4 si
+  tu as réglé le curseur sur 4
+
+**Apports nutritionnels**
+- Bloc **calories + macros par portion** sur chaque fiche, avec la répartition de l'énergie
+  entre protéines / glucides / lipides, les grammes de chaque macro, les fibres, et la part
+  d'un repère de 2 000 kcal par jour
+- **Calories par personne et par jour** sur le planning de la semaine
+- Table de composition de 225 aliments, cohérente avec les tables usuelles (type Ciqual)
+- Interrupteur pour tout masquer dans les Réglages
+- ⚠️ Valeurs **moyennes et indicatives**, calculées sur les ingrédients **crus** :
+  c'est fait pour situer un plat, pas pour un suivi diététique ou médical
+
 **Budget** (barème Intermarché · Toulouse)
 - Coût estimé **par recette et par portion**, recalculé quand tu changes le nombre de convives
 - **Budget de la semaine** sur le planning et coût par repas
@@ -130,15 +152,18 @@ js/
   app.js                navigation par onglets, rendu réactif
   store.js              état + persistance localStorage + agrégation de la liste
   utils.js              unités & conversions, lecture des quantités, rayons, dates
-  prices.js             moteur d'estimation (barème, conversions, coûts)
+  prices.js             moteur d'estimation des coûts
+  nutrition.js          moteur d'estimation des apports
+  measure.js            conversions partagées (cuillères, pièces, conserves → grammes)
   import.js             lecture d'une recette collée en texte libre
   ui.js                 icônes SVG, feuilles modales, toasts, confirmations
   weekstate.js          semaine affichée, partagée entre les vues
   data/seed.js          catégories et recettes de démarrage
   data/prices.js        barème de prix indicatif (221 produits)
   data/library.js       bibliothèque de 49 idées de recettes
+  data/nutrition.js     table de composition (225 aliments)
   views/                recipes · week · shopping · settings · pickers
-                        pricesView · importText · library
+                        pricesView · importText · library · share
 assets/icons/           icônes de l'app (générées depuis tools/icon.svg)
 tools/render-icons.mjs  régénère les PNG depuis le SVG (npm i -D playwright)
 ```
@@ -154,7 +179,7 @@ tools/render-icons.mjs  régénère les PNG depuis le SVG (npm i -D playwright)
   "plan":       { "2026-09-14": [{ "recipeId", "servings", "slot" }] },
   "list":       [{ "name", "qty", "unit", "rayon", "checked", "sources" }],
   "prices":     { "lardon": { "price": 14.9, "unit": "kg" } },   // corrections perso
-  "settings":   { "defaultServings": 2, "showPrices": true }
+  "settings":   { "defaultServings": 2, "showPrices": true, "showNutrition": true }
 }
 ```
 

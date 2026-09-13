@@ -103,6 +103,25 @@ export function formatQty(qty, unit) {
   return label ? `${n} ${label}` : n;
 }
 
+/**
+ * Rapproche un nom d'ingrédient d'une liste de clés de référence.
+ * La clé la plus longue qui « tient » dans le nom gagne : « huile d'olive »
+ * l'emporte sur « olive ». La comparaison se fait aussi au singulier des deux
+ * côtés pour rattraper « petits pois » ↔ « petit pois ».
+ */
+export function bestKeyMatch(name, keys) {
+  const plain = normalize(name);
+  const singular = ingredientKey(name);
+  let best = null;
+  for (const key of keys) {
+    if (best && key.length <= best.length) continue;
+    if (plain.includes(key) || singular.includes(key) || singular.includes(ingredientKey(key))) {
+      best = key;
+    }
+  }
+  return best;
+}
+
 /* ------------------------------------------------- lecture d'une quantité */
 
 // Écritures rencontrées dans les recettes → unité interne.

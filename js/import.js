@@ -10,6 +10,8 @@ const BULLET = /^[-–—•*·▪]\s*/;
 const NUMBERED = /^(?:[ée]tape\s*)?\d{1,2}\s*[).:/-]\s+/i;
 const EMOJI_START = /^([\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}]+)\s*/u;
 const META_LINE = /^(temps|pr[ée]paration|cuisson|repos|difficult[ée]|co[ûu]t|portions?|parts?)\s*[:=]/i;
+// signatures ajoutées au bas d'une recette partagée
+const SIGNATURE = /^[—–-]?\s*(partag[ée]e? (depuis|avec|par)|envoy[ée]e? depuis|via miamdo|recette miamdo)/i;
 
 // Débuts de phrase typiques d'une instruction de cuisine.
 const VERB_START = new RegExp(
@@ -106,6 +108,7 @@ export function parseRecipeText(raw) {
     const line = lines[i];
     if (ING_HEADER.test(line) || STEP_HEADER.test(line) || NOTE_HEADER.test(line)) break;
     if (BULLET.test(line) || NUMBERED.test(line)) break;
+    if (SIGNATURE.test(line)) continue;
     if (META_LINE.test(line)) continue;
     if (readServings(line) && line.length < 40) continue;
     if (durationOf(line) && line.length < 40) continue;
@@ -128,6 +131,7 @@ export function parseRecipeText(raw) {
 
   lines.forEach((line, index) => {
     if (index === titleIndex) return;
+    if (SIGNATURE.test(line)) return;
 
     if (NOTE_HEADER.test(line)) {
       mode = 'notes';

@@ -9,6 +9,7 @@ import { weekState } from '../weekstate.js';
 import { openRecipePicker } from './pickers.js';
 import { openRecipeDetail } from './recipes.js';
 import { planCost, recipeCost, formatEuro } from '../prices.js';
+import { dayNutrition, formatKcal } from '../nutrition.js';
 
 const SLOT_LABEL = { midi: 'Midi', diner: 'Dîner' };
 
@@ -20,6 +21,7 @@ export function render({ topbar, view }) {
   const thisWeek = isoDate(startOfWeek(new Date())) === isoDate(monday);
   const withPrices = store.getState().settings.showPrices !== false;
   const budget = withPrices ? planCost(isoList, store.getRecipe) : null;
+  const withNutrition = store.getState().settings.showNutrition !== false;
 
   topbar.innerHTML = `
     <div class="topbar-row">
@@ -43,6 +45,11 @@ export function render({ topbar, view }) {
             <div class="dnum">${date.getDate()} ${date.toLocaleDateString('fr-FR', { month: 'long' })}</div>
           </div>
           ${isToday(date) ? '<span class="today-pill">aujourd’hui</span>' : ''}
+          ${(() => {
+            if (!withNutrition || !meals.length) return '';
+            const n = dayNutrition(meals, store.getRecipe);
+            return n && n.kcal ? `<span class="kcal">${formatKcal(n.kcal)} / pers</span>` : '';
+          })()}
           <button type="button" class="icon-btn plain add" data-add-day="${iso}" aria-label="Ajouter un repas">${icon('plus')}</button>
         </header>
         ${meals.length
