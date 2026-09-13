@@ -7,6 +7,8 @@ import {
 } from '../utils.js';
 import { weekState } from '../weekstate.js';
 import { openRecipePicker } from './pickers.js';
+import { listCost, formatEuro } from '../prices.js';
+import { openPriceForIngredient } from './pricesView.js';
 
 /** « 2 kg tomates » → { qty: 2, unit: 'kg', name: 'tomates' } */
 export function parseQuickAdd(text) {
@@ -34,6 +36,10 @@ export function render({ topbar, view }) {
   const done = items.filter((i) => i.checked);
   const todo = items.filter((i) => !i.checked);
   const pct = items.length ? Math.round((done.length / items.length) * 100) : 0;
+  const withPrices = store.getState().settings.showPrices !== false;
+  const budget = withPrices ? listCost(items) : null;
+  const costOf = (item) => budget?.costs.get(item.id) ?? null;
+  const groupTotal = (list) => list.reduce((n, it) => n + (costOf(it) || 0), 0);
 
   topbar.innerHTML = `
     <div class="topbar-row">
@@ -60,7 +66,10 @@ export function render({ topbar, view }) {
         <div class="name">${escapeHtml(it.name)}</div>
         ${it.sources.length ? `<div class="from">${escapeHtml(it.sources.slice(0, 2).join(' · '))}${it.sources.length > 2 ? ` +${it.sources.length - 2}` : ''}</div>` : ''}
       </span>
-      ${it.qty || it.unit !== 'piece' ? `<span class="qty">${formatQty(it.qty, it.unit)}</span>` : ''}
+      <span style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none">
+        ${it.qty || it.unit !== 'piece' ? `<span class="qty">${formatQty(it.qty, it.unit)}</span>` : ''}
+        ${withPrices && costOf(it) ? `<span class="price muted-price">≈ ${formatEuro(costOf(it))}</span>` : ''}
+      </span>
       <button type="button" class="icon-btn plain" data-edit="${it.id}" aria-label="Modifier">${icon('pencil')}</button>
     </div>`;
 
@@ -75,9 +84,22 @@ export function render({ topbar, view }) {
     </div>
 
     ${items.length ? `
+      ${budget && budget.total ? `
+        <div class="budget">
+          <div>
+            <b>≈ ${formatEuro(budget.total)}</b>
+            <span class="lbl">panier estimé</span>
+          </div>
+          <div class="right">
+            <b>≈ ${formatEuro(budget.remaining)}</b>
+            <span>reste à prendre</span>
+          </div>
+        </div>` : ''}
+
       ${group(todo).map((g) => `
         <section class="aisle">
-          <div class="aisle-head">${g.rayon.emoji} ${escapeHtml(g.rayon.name)}<span class="n">${g.items.length}</span></div>
+          <div class="aisle-head">${g.rayon.emoji} ${escapeHtml(g.rayon.name)}
+            <span class="n">${withPrices && groupTotal(g.items) ? `≈ ${formatEuro(groupTotal(g.items))} · ` : ''}${g.items.length}</span></div>
           <div class="rows">${g.items.map(itemRow).join('')}</div>
         </section>`).join('')}
 
@@ -86,6 +108,11 @@ export function render({ topbar, view }) {
         <div class="rows">${done.map(itemRow).join('')}</div>
         <button type="button" class="btn btn-block" style="margin-top:12px" data-clear-checked>
           ${icon('trash')} Effacer les articles cochés
+        </button>` : ''}
+
+      ${budget && budget.missing.length ? `
+        <button type="button" class="btn btn-block btn-soft" style="margin-top:4px" data-missing>
+          ${icon('tag')} ${budget.missing.length} article${budget.missing.length > 1 ? 's' : ''} sans prix — compléter
         </button>` : ''}
 
       ${!todo.length && done.length ? `
@@ -133,6 +160,7 @@ export function render({ topbar, view }) {
     toast('Articles cochés effacés', { action: 'Annuler', onAction: () => store.undo() });
   });
   delegate(view, '[data-generate]', 'click', generateFromWeek);
+  delegate(view, '[data-missing]', 'click', () => openPriceForIngredient(budget.missing[0]));
   delegate(view, '[data-from-recipe]', 'click', () => {
     openRecipePicker((recipe) => {
       const n = store.addRecipeToList(recipe.id, recipe.servings);

@@ -6,6 +6,8 @@ import {
   escapeHtml, formatQty, formatTime, UNIT_ORDER, UNITS, RAYONS, guessRayon, uid,
 } from '../utils.js';
 import { openDayPicker } from './pickers.js';
+import { recipeCost, formatEuro } from '../prices.js';
+import { openPriceForIngredient } from './pricesView.js';
 
 const ui = { query: '', filter: 'all' };
 
@@ -14,6 +16,7 @@ const EMOJIS = ['🍝', '🍗', '🥗', '🐟', '🍛', '🍳', '🌶️', '🥫
   '🍲', '🥧', '🍰', '🧁', '🍮', '🍦', '🥤', '🍷', '☕️', '🥟', '🍤', '🥩'];
 
 const catById = (id) => store.getState().categories.find((c) => c.id === id);
+const pricesShown = () => store.getState().settings.showPrices !== false;
 
 /* ------------------------------------------------------------------- liste */
 
@@ -31,6 +34,7 @@ function matches(recipe, state) {
 function recipeCard(recipe) {
   const tags = recipe.categoryIds.map(catById).filter(Boolean).slice(0, 2);
   const accent = tags[0]?.color;
+  const cost = pricesShown() ? recipeCost(recipe) : null;
   return `
     <button type="button" class="recipe-card" data-recipe="${recipe.id}"
       ${accent ? `style="--card-accent:${accent}"` : ''}>
@@ -45,6 +49,9 @@ function recipeCard(recipe) {
         ${recipe.time ? `<span>${icon('clock')}${formatTime(recipe.time)}</span>` : ''}
         <span>${icon('users')}${recipe.servings}</span>
         <span>${recipe.ingredients.length} ingr.</span>
+        ${cost && cost.total
+          ? `<span class="price" style="margin-left:auto">≈ ${formatEuro(cost.perServing)}/pers</span>`
+          : ''}
       </span>
     </button>`;
 }
@@ -125,8 +132,9 @@ export function openRecipeDetail(id) {
     onRight: (api) => { api.close(); openRecipeEditor(recipe); },
     render: (api) => {
       const draw = () => {
-        const ratio = servings / recipe.servings;
         const tags = recipe.categoryIds.map(catById).filter(Boolean);
+        const withPrices = pricesShown();
+        const cost = recipeCost(recipe, servings);
         api.body.innerHTML = `
           <div class="detail-hero">
             <div class="big">${recipe.emoji}</div>
@@ -159,15 +167,34 @@ export function openRecipeDetail(id) {
 
           <div class="section-title">Ingrédients <span class="count">· ${recipe.ingredients.length}</span></div>
           <div class="rows">
-            ${recipe.ingredients.map((ing) => `
+            ${cost.lines.map((ing) => `
               <div class="row">
                 <span class="grow">
                   <div class="primary">${escapeHtml(ing.name)}</div>
                   <div class="secondary">${RAYONS.find((r) => r.id === ing.rayon)?.emoji || ''} ${RAYONS.find((r) => r.id === ing.rayon)?.name || ''}</div>
                 </span>
-                <span class="trail"><b style="color:var(--text)">${formatQty(Math.round(ing.qty * ratio * 100) / 100, ing.unit)}</b></span>
+                <span class="trail" style="flex-direction:column;align-items:flex-end;gap:1px">
+                  <b style="color:var(--text)">${formatQty(ing.qty, ing.unit)}</b>
+                  ${withPrices && ing.cost !== null && ing.cost > 0
+                    ? `<span class="price muted-price">≈ ${formatEuro(ing.cost)}</span>`
+                    : ''}
+                </span>
               </div>`).join('') || '<div class="row"><span class="grow muted">Aucun ingrédient</span></div>'}
           </div>
+
+          ${withPrices && recipe.ingredients.length ? `
+            <div class="section-title">Coût estimé</div>
+            <div class="card" style="padding:4px 16px 14px">
+              <div class="cost-line"><span class="lbl">Par portion</span><span>≈ ${formatEuro(cost.perServing)}</span></div>
+              <div class="cost-line total"><span class="lbl">Total pour ${servings} portion${servings > 1 ? 's' : ''}</span><span>≈ ${formatEuro(cost.total)}</span></div>
+            </div>
+            ${cost.missing.length ? `
+              <button type="button" class="btn btn-block btn-soft" style="margin-top:10px" data-missing>
+                ${icon('tag')} ${cost.missing.length} ingrédient${cost.missing.length > 1 ? 's' : ''} sans prix — compléter
+              </button>` : ''}
+            <p class="muted" style="font-size:12px;line-height:1.5;margin:10px 2px 0">
+              Estimation d’après le barème Intermarché indicatif, ajustable dans Réglages → Mes prix.
+            </p>` : ''}
 
           ${recipe.steps.length ? `
             <div class="section-title">Préparation</div>
@@ -198,6 +225,9 @@ export function openRecipeDetail(id) {
         });
         api.body.querySelector('[data-plan]').addEventListener('click', () => {
           openDayPicker(recipe.id, servings);
+        });
+        api.body.querySelector('[data-missing]')?.addEventListener('click', () => {
+          openPriceForIngredient(cost.missing[0], draw);
         });
         api.body.querySelector('[data-dup]').addEventListener('click', () => {
           const copy = store.duplicateRecipe(recipe.id);

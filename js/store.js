@@ -46,6 +46,7 @@ function initialState() {
     recipes: SEED_RECIPES.map(normalizeRecipe),
     plan: {},
     list: [],
+    prices: {},
     settings: { defaultServings: 2, seeded: true },
   };
 }
@@ -63,6 +64,7 @@ function load() {
       recipes: (parsed.recipes || []).map(normalizeRecipe),
       plan: parsed.plan || {},
       list: parsed.list || [],
+      prices: parsed.prices || {},
       settings: { defaultServings: 2, ...(parsed.settings || {}) },
     };
   } catch (err) {
@@ -365,6 +367,28 @@ export function generateFromPlan(dayIsoList, { replace = true } = {}) {
   return additions.length;
 }
 
+/* ------------------------------------------------------------------- prix */
+
+/** Corrige le prix de référence d'un produit (ou en ajoute un nouveau). */
+export function setPrice(key, { price, unit, label } = {}) {
+  commit((s) => {
+    s.prices[key] = {
+      price: Math.max(0, Number(price) || 0),
+      unit: unit || s.prices[key]?.unit || 'kg',
+      ...(label ? { label } : {}),
+    };
+  });
+}
+
+/** Revient au prix du barème d'origine (ou supprime un produit ajouté). */
+export function resetPrice(key) {
+  commit((s) => { delete s.prices[key]; });
+}
+
+export function resetAllPrices() {
+  commit((s) => { s.prices = {}; }, { undoLabel: 'Prix réinitialisés' });
+}
+
 /* ---------------------------------------------------------------- réglages */
 
 export function updateSettings(patch) {
@@ -383,6 +407,7 @@ export function importData(json, { merge = false } = {}) {
     recipes: (parsed.recipes || []).map(normalizeRecipe),
     plan: parsed.plan || {},
     list: parsed.list || [],
+    prices: parsed.prices || {},
     settings: parsed.settings || {},
   };
   commit((s) => {
@@ -392,11 +417,13 @@ export function importData(json, { merge = false } = {}) {
       const names = new Set(s.recipes.map((r) => r.name.toLowerCase()));
       incoming.recipes.forEach((r) => { if (!names.has(r.name.toLowerCase())) s.recipes.push(r); });
       Object.assign(s.plan, incoming.plan);
+      Object.assign(s.prices, incoming.prices);
     } else {
       s.categories = incoming.categories;
       s.recipes = incoming.recipes;
       s.plan = incoming.plan;
       s.list = incoming.list;
+      s.prices = incoming.prices;
       s.settings = { defaultServings: 2, ...incoming.settings };
     }
   }, { undoLabel: 'Import de données' });

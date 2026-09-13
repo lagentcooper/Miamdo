@@ -8,6 +8,7 @@ import {
 import { weekState } from '../weekstate.js';
 import { openRecipePicker } from './pickers.js';
 import { openRecipeDetail } from './recipes.js';
+import { planCost, recipeCost, formatEuro } from '../prices.js';
 
 const SLOT_LABEL = { midi: 'Midi', diner: 'Dîner' };
 
@@ -17,6 +18,8 @@ export function render({ topbar, view }) {
   const isoList = days.map(isoDate);
   const planned = store.countPlanned(isoList);
   const thisWeek = isoDate(startOfWeek(new Date())) === isoDate(monday);
+  const withPrices = store.getState().settings.showPrices !== false;
+  const budget = withPrices ? planCost(isoList, store.getRecipe) : null;
 
   topbar.innerHTML = `
     <div class="topbar-row">
@@ -51,7 +54,8 @@ export function render({ topbar, view }) {
                   <span class="emoji">${r.emoji}</span>
                   <span class="grow">
                     <div class="mname">${escapeHtml(r.name)}</div>
-                    <div class="mmeta">${m.servings} portions${r.time ? ` · ${formatTime(r.time)}` : ''}</div>
+                    <div class="mmeta">${m.servings} portions${r.time ? ` · ${formatTime(r.time)}` : ''}${
+                      withPrices ? ` · <span class="price muted-price">≈ ${formatEuro(recipeCost(r, m.servings).total)}</span>` : ''}</div>
                   </span>
                   <span class="slot">${SLOT_LABEL[m.slot] || ''}</span>
                 </div>`;
@@ -64,7 +68,9 @@ export function render({ topbar, view }) {
     ${planned ? `
       <div class="hero">
         <h2>${planned} repas cette semaine</h2>
-        <p>Génère ta liste de courses : les ingrédients sont additionnés et rangés par rayon.</p>
+        <p>${budget && budget.total
+          ? `Budget estimé <b>≈ ${formatEuro(budget.total)}</b> — génère la liste, les ingrédients sont additionnés et rangés par rayon.`
+          : 'Génère ta liste de courses : les ingrédients sont additionnés et rangés par rayon.'}</p>
         <button type="button" class="btn" data-generate>${icon('sparkles')} Générer la liste</button>
       </div>` : `
       <div class="hero">
