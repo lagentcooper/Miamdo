@@ -6,6 +6,8 @@ import * as recipes from './views/recipes.js';
 import * as week from './views/week.js';
 import * as shopping from './views/shopping.js';
 import * as settings from './views/settings.js';
+import { readSharedLink, openSharedRecipe } from './views/share.js';
+import { openRecipeEditor } from './views/recipes.js';
 
 const TABS = [
   { id: 'recipes', label: 'Recettes', ic: 'book', view: recipes },
@@ -41,6 +43,11 @@ function freshShell(animate) {
   topbar = nextTopbar;
   view = nextView;
 }
+
+// Une recette reçue par lien (#r=…) : on la lit avant toute navigation,
+// puis on nettoie l'URL pour ne pas la ré-ouvrir à chaque rafraîchissement.
+let sharedDraft = readSharedLink(location.hash);
+if (sharedDraft) history.replaceState(null, '', location.pathname + location.search);
 
 let current = TABS.find((t) => t.id === location.hash.slice(1))?.id || 'recipes';
 const scrollMemory = {};
@@ -108,7 +115,16 @@ tabbar.addEventListener('click', (e) => {
   navigate(tab.dataset.tab);
 });
 
-window.addEventListener('hashchange', () => navigate(location.hash.slice(1) || 'recipes', { push: false }));
+window.addEventListener('hashchange', () => {
+  const shared = readSharedLink(location.hash);
+  if (shared) {
+    history.replaceState(null, '', location.pathname + location.search);
+    navigate('recipes', { push: false });
+    openSharedRecipe(shared, { onEdit: (draft) => openRecipeEditor(draft) });
+    return;
+  }
+  navigate(location.hash.slice(1) || 'recipes', { push: false });
+});
 window.addEventListener('miamdo:navigate', (e) => navigate(e.detail));
 
 // l'état change → on redessine (liste, planning, recettes restent synchronisés)
@@ -116,6 +132,13 @@ store.subscribe(() => render());
 
 render({ animate: true });
 if (location.hash.slice(1) !== current) location.hash = current;
+
+// recette reçue par lien : on la présente une fois l'app dessinée
+if (sharedDraft) {
+  const draft = sharedDraft;
+  sharedDraft = null;
+  setTimeout(() => openSharedRecipe(draft, { onEdit: (d) => openRecipeEditor(d) }), 240);
+}
 
 // service worker : l'app reste utilisable hors connexion
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {

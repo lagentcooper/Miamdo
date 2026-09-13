@@ -781,6 +781,116 @@ input, textarea, select { -webkit-appearance: none; appearance: none; }
 .stat b { display: block; font-size: 20px; font-weight: 800; letter-spacing: -.4px; }
 .stat span { font-size: 11.5px; color: var(--muted); font-weight: 600; }
 
+/* interrupteur */
+.switch {
+  position: relative;
+  width: 50px; height: 30px;
+  border-radius: 15px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  transition: background .22s;
+  flex: none;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.22);
+  transition: transform .22s cubic-bezier(.2,.8,.3,1);
+}
+.switch.on { background: var(--green); border-color: transparent; }
+.switch.on::after { transform: translateX(20px); }
+
+/* prix */
+.price {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.price.muted-price { color: var(--muted); font-weight: 600; }
+.budget {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  margin-bottom: 14px;
+}
+.budget b { font-size: 26px; font-weight: 800; letter-spacing: -.8px; }
+.budget .lbl { font-size: 13px; color: var(--muted); font-weight: 600; margin-left: 6px; }
+.budget .right { margin-left: auto; text-align: right; }
+.budget .right span { display: block; font-size: 12px; color: var(--muted); font-weight: 600; }
+.budget .right b { font-size: 17px; color: var(--text-2); }
+
+.cost-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14.5px;
+}
+.cost-line:last-child { border-bottom: 0; }
+.cost-line .lbl { color: var(--text-2); }
+.cost-line.total { font-weight: 800; font-size: 16px; padding-top: 12px; }
+.cost-line.total .lbl { color: var(--text); }
+
+/* apports nutritionnels */
+.nutri {
+  padding: 14px 16px 16px;
+  border-radius: var(--r-lg);
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.nutri-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.nutri-top b { font-size: 27px; font-weight: 800; letter-spacing: -.8px; white-space: nowrap; }
+.nutri-top .lbl { font-size: 13px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.nutri-top .right {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.macro-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 12px 0 9px;
+  background: var(--bg-sunken);
+}
+.macro-bar i { display: block; height: 100%; transition: width .35s cubic-bezier(.2,.8,.3,1); }
+.macro-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-2); font-weight: 600; }
+.macro-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.macro-legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+
+.nutri-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 13px; }
+.nutri-cell { text-align: center; padding: 10px 4px; border-radius: var(--r-md); background: var(--bg-sunken); }
+.nutri-cell b { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
+.nutri-cell span { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+.day-head .kcal {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--bg-sunken);
+  padding: 3px 8px;
+  border-radius: 999px;
+  margin-left: auto;
+}
+.day-head .kcal + .add { margin-left: 8px; }
+
 /* ------------------------------------------------------------------ toast */
 
 .toast-host {

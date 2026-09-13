@@ -4,6 +4,9 @@ import * as store from '../store.js';
 import { icon, openSheet, confirmSheet, toast, haptic, delegate } from '../ui.js';
 import { escapeHtml } from '../utils.js';
 import { openCategoryEditor } from './recipes.js';
+import { openPriceManager } from './pricesView.js';
+import { allEntries, PRICE_META } from '../prices.js';
+import { NUTRITION_META } from '../nutrition.js';
 
 export const APP_VERSION = '1.0.0';
 
@@ -11,6 +14,9 @@ export function render({ topbar, view }) {
   const state = store.getState();
   const countFor = (id) => state.recipes.filter((r) => r.categoryIds.includes(id)).length;
   const ingredients = state.recipes.reduce((n, r) => n + r.ingredients.length, 0);
+  const showPrices = state.settings.showPrices !== false;
+  const showNutrition = state.settings.showNutrition !== false;
+  const editedPrices = allEntries().filter((e) => e.edited || e.custom).length;
 
   topbar.innerHTML = `
     <div class="topbar-row">
@@ -40,6 +46,47 @@ export function render({ topbar, view }) {
         <span class="grow"><span class="primary" style="color:var(--accent)">Nouvelle catégorie</span></span>
       </button>
     </div>
+
+    <div class="section-title">Budget</div>
+    <div class="rows">
+      <button type="button" class="row" data-prices>
+        <span class="grow">
+          <span class="primary">Mes prix</span>
+          <span class="secondary">${PRICE_META.enseigne} · ${PRICE_META.ville}${editedPrices ? ` · ${editedPrices} corrigé${editedPrices > 1 ? 's' : ''}` : ''}</span>
+        </span>
+        ${icon('right', 'chevron')}
+      </button>
+      <div class="row">
+        <span class="grow">
+          <span class="primary">Afficher les estimations</span>
+          <span class="secondary">Prix sur les recettes, la semaine et la liste</span>
+        </span>
+        <span class="switch ${showPrices ? 'on' : ''}" data-toggle-prices role="switch"
+          aria-checked="${showPrices}" tabindex="0"></span>
+      </div>
+    </div>
+    <p class="muted" style="font-size:12.5px;line-height:1.5;margin:8px 6px 0">
+      Les prix sont des <b>ordres de grandeur</b> saisis à la main (relevé ${PRICE_META.releve}),
+      pas des tarifs en direct : aucune enseigne ne publie de tarifs exploitables hors ligne.
+      Corrige-les d’après tes tickets, l’estimation devient fidèle à ton magasin.
+    </p>
+
+    <div class="section-title">Apports nutritionnels</div>
+    <div class="rows">
+      <div class="row">
+        <span class="grow">
+          <span class="primary">Afficher les apports</span>
+          <span class="secondary">Calories et macros par portion, calories par jour</span>
+        </span>
+        <span class="switch ${showNutrition ? 'on' : ''}" data-toggle-nutrition role="switch"
+          aria-checked="${showNutrition}" tabindex="0"></span>
+      </div>
+    </div>
+    <p class="muted" style="font-size:12.5px;line-height:1.5;margin:8px 6px 0">
+      Table de composition indicative (${NUTRITION_META.base}, repère ${NUTRITION_META.reference} kcal/jour),
+      calculée sur les ingrédients crus. C’est fait pour <b>situer un plat</b>, pas pour un suivi
+      diététique ou médical.
+    </p>
 
     <div class="section-title">Préférences</div>
     <div class="rows">
@@ -90,6 +137,15 @@ export function render({ topbar, view }) {
     openCategoryOptions(cat);
   });
   delegate(view, '[data-new-cat]', 'click', () => openCategoryEditor(null));
+  delegate(view, '[data-prices]', 'click', () => openPriceManager());
+  delegate(view, '[data-toggle-prices]', 'click', () => {
+    haptic();
+    store.updateSettings({ showPrices: !showPrices });
+  });
+  delegate(view, '[data-toggle-nutrition]', 'click', () => {
+    haptic();
+    store.updateSettings({ showNutrition: !showNutrition });
+  });
   delegate(view, '[data-serv]', 'click', (e, el) => {
     const next = Math.max(1, Math.min(12, state.settings.defaultServings + Number(el.dataset.serv)));
     haptic();

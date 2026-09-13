@@ -14,36 +14,54 @@ une app native, fonctionne **sans connexion**, et **toutes les données restent 
 
 ## 📲 L'installer sur l'iPhone
 
-L'app a besoin d'être servie en HTTPS pour s'installer proprement. Le plus simple :
+L'app doit être servie en **HTTPS** pour s'installer proprement (c'est une exigence
+d'iOS pour le mode hors ligne). Quatre façons gratuites, au choix.
 
-### Option A — GitHub Pages (recommandé, 2 minutes)
+### Option A — GitHub Pages (gratuit **si le dépôt est public**)
 
-1. Sur GitHub : **Settings → Pages**
-2. *Source* : **GitHub Actions**
-3. Onglet **Actions → « Déployer Miamdo sur GitHub Pages » → Run workflow** (choisir cette branche)
-4. Ouvrir l'URL donnée (`https://<pseudo>.github.io/Miamdo/`) **dans Safari** sur l'iPhone
+GitHub Pages est gratuit sur un dépôt public ; il n'est payant (GitHub Pro) que pour
+publier un dépôt **privé**. Le code de Miamdo ne contient aucune donnée personnelle
+— tes recettes vivent dans le stockage de ton téléphone — donc passer le dépôt en
+public n'expose rien de privé.
+
+1. **Settings → General → Change repository visibility → Public** (si besoin)
+2. **Settings → Pages** → *Source* : **GitHub Actions**
+3. Onglet **Actions → « Déployer Miamdo sur GitHub Pages » → Run workflow** (cette branche)
+4. Ouvrir `https://<pseudo>.github.io/Miamdo/` **dans Safari** sur l'iPhone
 5. Bouton **Partager** ↑ → **« Sur l'écran d'accueil »** → *Ajouter*
 
-L'icône Miamdo apparaît sur l'écran d'accueil. Premier lancement avec du réseau pour mettre
-l'app en cache, ensuite elle marche en avion.
+### Option B — Netlify Drop (gratuit, dépôt privé, sans rien installer)
 
-> Le dépôt doit être public pour Pages (ou avoir GitHub Pro). Aucune donnée personnelle n'est
-> publiée : seules les recettes de démarrage font partie du code, les tiennes vivent dans le
-> stockage local de ton téléphone.
+Le plus rapide si tu veux garder le dépôt privé :
 
-### Option B — depuis un ordinateur du même Wi-Fi
+1. **Code → Download ZIP**, décompresser le dossier
+2. Aller sur **app.netlify.com/drop** (compte gratuit)
+3. **Glisser le dossier** dans la page → une URL HTTPS `xxx.netlify.app` apparaît
+4. Ouvrir cette URL dans Safari → Partager ↑ → *Sur l'écran d'accueil*
+
+Pour mettre à jour : reglisser le dossier au même endroit.
+
+### Option C — Cloudflare Pages ou Vercel (gratuit, dépôt privé, redéploiement auto)
+
+Le meilleur compromis sur la durée : chaque `git push` republie l'app.
+
+- **Cloudflare Pages** : *Create a project → Connect to Git →* choisir `Miamdo`,
+  *Framework preset* : **None**, *Build command* : vide, *Build output directory* : `/`
+- **Vercel** : *Add New → Project →* importer `Miamdo`, *Framework preset* : **Other**,
+  laisser les champs de build vides
+
+Les deux acceptent les dépôts privés sur leur offre gratuite et servent en HTTPS.
+
+### Option D — depuis un ordinateur du même Wi-Fi (test uniquement)
 
 ```bash
 cd Miamdo
 python3 -m http.server 8123
 ```
 
-Puis sur l'iPhone : `http://<ip-de-l-ordi>:8123`.
-L'ajout à l'écran d'accueil fonctionne, mais iOS refuse le mode hors ligne sur une origine
-non sécurisée : l'app a besoin que l'ordinateur soit allumé. Pratique pour tester, pas pour
-tous les jours.
-
----
+Puis sur l'iPhone : `http://<ip-de-l-ordi>:8123`. L'ajout à l'écran d'accueil marche,
+mais iOS refuse le mode hors ligne sur une origine non sécurisée : l'app aura besoin
+que l'ordinateur soit allumé. Pratique pour essayer, pas pour tous les jours.
 
 ## ✨ Ce que fait l'app
 
@@ -73,6 +91,47 @@ tous les jours.
 - Progression, articles cochés regroupés, partage de la liste par SMS/Notes (menu ⚙︎)
 - Régénérer la liste **conserve les articles ajoutés à la main**
 
+**Partager une recette**
+- **Partager la recette** : ouvre la feuille de partage iOS (Messages, Mail, Notes, WhatsApp…)
+  avec un texte propre. Ce texte est exactement le format que l'import sait relire :
+  le destinataire le recolle dans Miamdo (＋ → Coller depuis une note) et retrouve la recette
+  avec ses quantités et ses étapes
+- **Partager un lien Miamdo** : la recette est encodée *dans* l'URL (≈ 650 caractères).
+  Ouvert sur un téléphone où Miamdo est installé, le lien affiche « Recette partagée »
+  et l'ajoute en un tap. **Rien ne transite par un serveur** — pas de compte, pas de base
+- **Copier le texte**, avec aperçu de ce qui sera envoyé
+- Le partage respecte le nombre de portions affiché : tu partages la version pour 4 si
+  tu as réglé le curseur sur 4
+
+**Apports nutritionnels**
+- Bloc **calories + macros par portion** sur chaque fiche, avec la répartition de l'énergie
+  entre protéines / glucides / lipides, les grammes de chaque macro, les fibres, et la part
+  d'un repère de 2 000 kcal par jour
+- **Calories par personne et par jour** sur le planning de la semaine
+- Table de composition de 225 aliments, cohérente avec les tables usuelles (type Ciqual)
+- Interrupteur pour tout masquer dans les Réglages
+- ⚠️ Valeurs **moyennes et indicatives**, calculées sur les ingrédients **crus** :
+  c'est fait pour situer un plat, pas pour un suivi diététique ou médical
+
+**Budget** (barème Intermarché · Toulouse)
+- Coût estimé **par recette et par portion**, recalculé quand tu changes le nombre de convives
+- **Budget de la semaine** sur le planning et coût par repas
+- **Panier estimé** et « reste à prendre » sur la liste, sous-total par rayon, prix par article
+- Réglages → **Mes prix** : corrige un prix d'après ton ticket, il est utilisé partout
+- ⚠️ Ce sont des **ordres de grandeur saisis à la main**, pas des prix relevés en direct :
+  aucune enseigne ne publie de tarifs exploitables hors ligne. Deux ou trois corrections
+  après tes premières courses et l'estimation colle à ton magasin.
+
+**Ajouter une recette — trois chemins**
+- ✍️ **Créer de zéro** : éditeur complet (ingrédients quantifiés, étapes, catégories)
+- 📋 **Coller depuis une note** : colle le texte d'une recette (Notes, SMS, site web),
+  Miamdo reconnaît le titre, « Pour 4 personnes », le temps, les ingrédients avec leurs
+  quantités (`2 c. à s. d'huile`, `½ citron`, `200g farine`) et les étapes numérotées —
+  tu vérifies l'aperçu avant d'enregistrer
+- 💡 **Parcourir des idées** : bibliothèque de 49 recettes filtrable par **catégorie**,
+  **temps** (20 / 45 min max) et **budget** (2 / 4 € par personne max), avec le coût
+  estimé affiché avant l'ajout
+
 **Le reste**
 - Mode sombre automatique, gestes iOS (feuilles modales qu'on referme en glissant)
 - Annulation (« Annuler » dans les notifications) sur toutes les actions destructives
@@ -92,11 +151,19 @@ css/style.css           design system (variables, thème clair/sombre, safe area
 js/
   app.js                navigation par onglets, rendu réactif
   store.js              état + persistance localStorage + agrégation de la liste
-  utils.js              unités & conversions, rayons, dates, formatage français
+  utils.js              unités & conversions, lecture des quantités, rayons, dates
+  prices.js             moteur d'estimation des coûts
+  nutrition.js          moteur d'estimation des apports
+  measure.js            conversions partagées (cuillères, pièces, conserves → grammes)
+  import.js             lecture d'une recette collée en texte libre
   ui.js                 icônes SVG, feuilles modales, toasts, confirmations
   weekstate.js          semaine affichée, partagée entre les vues
   data/seed.js          catégories et recettes de démarrage
+  data/prices.js        barème de prix indicatif (221 produits)
+  data/library.js       bibliothèque de 49 idées de recettes
+  data/nutrition.js     table de composition (225 aliments)
   views/                recipes · week · shopping · settings · pickers
+                        pricesView · importText · library · share
 assets/icons/           icônes de l'app (générées depuis tools/icon.svg)
 tools/render-icons.mjs  régénère les PNG depuis le SVG (npm i -D playwright)
 ```
@@ -111,7 +178,8 @@ tools/render-icons.mjs  régénère les PNG depuis le SVG (npm i -D playwright)
                    "steps", "notes", "favorite" }],
   "plan":       { "2026-09-14": [{ "recipeId", "servings", "slot" }] },
   "list":       [{ "name", "qty", "unit", "rayon", "checked", "sources" }],
-  "settings":   { "defaultServings": 2 }
+  "prices":     { "lardon": { "price": 14.9, "unit": "kg" } },   // corrections perso
+  "settings":   { "defaultServings": 2, "showPrices": true, "showNutrition": true }
 }
 ```
 

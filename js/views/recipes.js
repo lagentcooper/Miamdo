@@ -6,6 +6,12 @@ import {
   escapeHtml, formatQty, formatTime, UNIT_ORDER, UNITS, RAYONS, guessRayon, uid,
 } from '../utils.js';
 import { openDayPicker } from './pickers.js';
+import { recipeCost, formatEuro } from '../prices.js';
+import { openPriceForIngredient } from './pricesView.js';
+import { openImportSheet } from './importText.js';
+import { openLibrary } from './library.js';
+import { openShareSheet } from './share.js';
+import { recipeNutrition, macroShare, formatKcal, formatGrams, shareOfDay, NUTRITION_META } from '../nutrition.js';
 
 const ui = { query: '', filter: 'all' };
 
@@ -14,6 +20,47 @@ const EMOJIS = ['🍝', '🍗', '🥗', '🐟', '🍛', '🍳', '🌶️', '🥫
   '🍲', '🥧', '🍰', '🧁', '🍮', '🍦', '🥤', '🍷', '☕️', '🥟', '🍤', '🥩'];
 
 const catById = (id) => store.getState().categories.find((c) => c.id === id);
+const pricesShown = () => store.getState().settings.showPrices !== false;
+const nutritionShown = () => store.getState().settings.showNutrition !== false;
+
+/** Bloc « apports par portion » d'une recette. */
+export function nutritionBlock(recipe, servings) {
+  const n = recipeNutrition(recipe, servings);
+  if (!n.counted) return '';
+  const share = macroShare(n.perServing);
+  const pct = shareOfDay(n.perServing.kcal);
+  return `
+    <div class="nutri">
+      <div class="nutri-top">
+        <b>${formatKcal(n.perServing.kcal)}</b>
+        <span class="lbl">par portion</span>
+        <span class="right">${pct} % du repère ${NUTRITION_META.reference} kcal</span>
+      </div>
+      <div class="macro-bar">
+        <i style="width:${share.prot}%;background:#7C6BF0"></i>
+        <i style="width:${share.gluc}%;background:#F2B705"></i>
+        <i style="width:${share.lip}%;background:#FF6B35"></i>
+      </div>
+      <div class="macro-legend">
+        <span><i class="dot" style="background:#7C6BF0"></i> Protéines ${share.prot} %</span>
+        <span><i class="dot" style="background:#F2B705"></i> Glucides ${share.gluc} %</span>
+        <span><i class="dot" style="background:#FF6B35"></i> Lipides ${share.lip} %</span>
+      </div>
+      <div class="nutri-grid">
+        <div class="nutri-cell"><b>${formatGrams(n.perServing.prot)}</b><span>protéines</span></div>
+        <div class="nutri-cell"><b>${formatGrams(n.perServing.gluc)}</b><span>glucides</span></div>
+        <div class="nutri-cell"><b>${formatGrams(n.perServing.lip)}</b><span>lipides</span></div>
+        <div class="nutri-cell"><b>${formatGrams(n.perServing.fibres)}</b><span>fibres</span></div>
+      </div>
+    </div>
+    ${n.missing.length ? `<p class="muted" style="font-size:12px;line-height:1.5;margin:10px 2px 0">
+      Calculé sur ${n.counted} ingrédient${n.counted > 1 ? 's' : ''} sur ${recipe.ingredients.length} —
+      pas de données pour : ${n.missing.join(', ')}.</p>` : ''}
+    <p class="muted" style="font-size:12px;line-height:1.5;margin:8px 2px 0">
+      Valeurs moyennes indicatives, pour situer un plat — pas un suivi diététique.
+      Le total est calculé sur les ingrédients crus, avant cuisson.
+    </p>`;
+}
 
 /* ------------------------------------------------------------------- liste */
 
@@ -31,6 +78,7 @@ function matches(recipe, state) {
 function recipeCard(recipe) {
   const tags = recipe.categoryIds.map(catById).filter(Boolean).slice(0, 2);
   const accent = tags[0]?.color;
+  const cost = pricesShown() ? recipeCost(recipe) : null;
   return `
     <button type="button" class="recipe-card" data-recipe="${recipe.id}"
       ${accent ? `style="--card-accent:${accent}"` : ''}>
@@ -45,6 +93,9 @@ function recipeCard(recipe) {
         ${recipe.time ? `<span>${icon('clock')}${formatTime(recipe.time)}</span>` : ''}
         <span>${icon('users')}${recipe.servings}</span>
         <span>${recipe.ingredients.length} ingr.</span>
+        ${cost && cost.total
+          ? `<span class="price" style="margin-left:auto">≈ ${formatEuro(cost.perServing)}/pers</span>`
+          : ''}
       </span>
     </button>`;
 }
@@ -95,8 +146,8 @@ export function render({ topbar, view }) {
     haptic();
     rerender();
   });
-  delegate(topbar, '[data-new]', 'click', () => openRecipeEditor());
-  delegate(view, '[data-new]', 'click', () => openRecipeEditor());
+  delegate(topbar, '[data-new]', 'click', () => openAddMenu());
+  delegate(view, '[data-new]', 'click', () => openAddMenu());
   delegate(view, '[data-fav]', 'click', (e, el) => {
     e.stopPropagation();
     haptic();
@@ -110,6 +161,49 @@ export function render({ topbar, view }) {
 
 let rerender = () => {};
 export function setRerender(fn) { rerender = fn; }
+
+/* ------------------------------------------------ menu « ajouter une recette » */
+
+export function openAddMenu() {
+  openSheet({
+    title: 'Ajouter une recette',
+    leftLabel: 'Annuler',
+    render: (api) => {
+      api.body.innerHTML = `
+        <button type="button" class="row card" style="width:100%;margin-bottom:10px;border-radius:var(--r-lg)" data-scratch>
+          <span style="font-size:26px">✍️</span>
+          <span class="grow">
+            <span class="primary">Créer de zéro</span>
+            <span class="secondary">Saisir les ingrédients et les étapes</span>
+          </span>
+          ${icon('right', 'chevron')}
+        </button>
+        <button type="button" class="row card" style="width:100%;margin-bottom:10px;border-radius:var(--r-lg)" data-paste>
+          <span style="font-size:26px">📋</span>
+          <span class="grow">
+            <span class="primary">Coller depuis une note</span>
+            <span class="secondary">Miamdo lit le texte et remplit la recette</span>
+          </span>
+          ${icon('right', 'chevron')}
+        </button>
+        <button type="button" class="row card" style="width:100%;border-radius:var(--r-lg)" data-library>
+          <span style="font-size:26px">💡</span>
+          <span class="grow">
+            <span class="primary">Parcourir des idées</span>
+            <span class="secondary">Bibliothèque filtrable par catégorie, temps et budget</span>
+          </span>
+          ${icon('right', 'chevron')}
+        </button>`;
+
+      const go = (fn) => { api.close(); setTimeout(fn, 320); };
+      api.body.querySelector('[data-scratch]').addEventListener('click', () => go(() => openRecipeEditor()));
+      api.body.querySelector('[data-paste]').addEventListener('click', () =>
+        go(() => openImportSheet({ onEdit: (draft) => openRecipeEditor(draft) })));
+      api.body.querySelector('[data-library]').addEventListener('click', () =>
+        go(() => openLibrary({ onEdit: (draft) => openRecipeEditor(draft) })));
+    },
+  });
+}
 
 /* ------------------------------------------------------------------- fiche */
 
@@ -125,8 +219,9 @@ export function openRecipeDetail(id) {
     onRight: (api) => { api.close(); openRecipeEditor(recipe); },
     render: (api) => {
       const draw = () => {
-        const ratio = servings / recipe.servings;
         const tags = recipe.categoryIds.map(catById).filter(Boolean);
+        const withPrices = pricesShown();
+        const cost = recipeCost(recipe, servings);
         api.body.innerHTML = `
           <div class="detail-hero">
             <div class="big">${recipe.emoji}</div>
@@ -155,19 +250,43 @@ export function openRecipeDetail(id) {
           <div class="hstack" style="gap:8px">
             <button type="button" class="btn btn-primary" style="flex:1" data-add>${icon('cart')} Ajouter aux courses</button>
             <button type="button" class="btn" data-plan aria-label="Planifier">${icon('calendar')}</button>
+            <button type="button" class="btn" data-share aria-label="Partager">${icon('share')}</button>
           </div>
 
           <div class="section-title">Ingrédients <span class="count">· ${recipe.ingredients.length}</span></div>
           <div class="rows">
-            ${recipe.ingredients.map((ing) => `
+            ${cost.lines.map((ing) => `
               <div class="row">
                 <span class="grow">
                   <div class="primary">${escapeHtml(ing.name)}</div>
                   <div class="secondary">${RAYONS.find((r) => r.id === ing.rayon)?.emoji || ''} ${RAYONS.find((r) => r.id === ing.rayon)?.name || ''}</div>
                 </span>
-                <span class="trail"><b style="color:var(--text)">${formatQty(Math.round(ing.qty * ratio * 100) / 100, ing.unit)}</b></span>
+                <span class="trail" style="flex-direction:column;align-items:flex-end;gap:1px">
+                  <b style="color:var(--text)">${formatQty(ing.qty, ing.unit)}</b>
+                  ${withPrices && ing.cost !== null && ing.cost > 0
+                    ? `<span class="price muted-price">≈ ${formatEuro(ing.cost)}</span>`
+                    : ''}
+                </span>
               </div>`).join('') || '<div class="row"><span class="grow muted">Aucun ingrédient</span></div>'}
           </div>
+
+          ${withPrices && recipe.ingredients.length ? `
+            <div class="section-title">Coût estimé</div>
+            <div class="card" style="padding:4px 16px 14px">
+              <div class="cost-line"><span class="lbl">Par portion</span><span>≈ ${formatEuro(cost.perServing)}</span></div>
+              <div class="cost-line total"><span class="lbl">Total pour ${servings} portion${servings > 1 ? 's' : ''}</span><span>≈ ${formatEuro(cost.total)}</span></div>
+            </div>
+            ${cost.missing.length ? `
+              <button type="button" class="btn btn-block btn-soft" style="margin-top:10px" data-missing>
+                ${icon('tag')} ${cost.missing.length} ingrédient${cost.missing.length > 1 ? 's' : ''} sans prix — compléter
+              </button>` : ''}
+            <p class="muted" style="font-size:12px;line-height:1.5;margin:10px 2px 0">
+              Estimation d’après le barème Intermarché indicatif, ajustable dans Réglages → Mes prix.
+            </p>` : ''}
+
+          ${nutritionShown() && recipe.ingredients.length ? `
+            <div class="section-title">Apports nutritionnels</div>
+            ${nutritionBlock(recipe, servings)}` : ''}
 
           ${recipe.steps.length ? `
             <div class="section-title">Préparation</div>
@@ -199,6 +318,12 @@ export function openRecipeDetail(id) {
         api.body.querySelector('[data-plan]').addEventListener('click', () => {
           openDayPicker(recipe.id, servings);
         });
+        api.body.querySelector('[data-missing]')?.addEventListener('click', () => {
+          openPriceForIngredient(cost.missing[0], draw);
+        });
+        api.body.querySelector('[data-share]').addEventListener('click', () => {
+          openShareSheet(recipe, servings);
+        });
         api.body.querySelector('[data-dup]').addEventListener('click', () => {
           const copy = store.duplicateRecipe(recipe.id);
           api.close();
@@ -224,9 +349,9 @@ export function openRecipeDetail(id) {
 /* ----------------------------------------------------------------- éditeur */
 
 export function openRecipeEditor(existing) {
-  const isNew = !existing;
+  const isNew = !existing || !existing.id;
   const draft = existing
-    ? JSON.parse(JSON.stringify(existing))
+    ? { ...JSON.parse(JSON.stringify(existing)), id: existing.id || uid('rec') }
     : {
         id: uid('rec'), name: '', emoji: '🍽️', categoryIds: [], time: 20,
         servings: store.getState().settings.defaultServings || 2,
