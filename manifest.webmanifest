@@ -1,0 +1,23 @@
+{
+  "name": "Miamdo — recettes & courses",
+  "short_name": "Miamdo",
+  "description": "Tes recettes par catégories et ta liste de courses qui se remplit toute seule.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F3F1",
+  "theme_color": "#FF6B35",
+  "categories": ["food", "lifestyle", "productivity"],
+  "icons": [
+    { "src": "./assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Liste de courses", "short_name": "Courses", "url": "./index.html#shopping" },
+    { "name": "Planning de la semaine", "short_name": "Semaine", "url": "./index.html#week" }
+  ]
+}
