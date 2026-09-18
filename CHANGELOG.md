@@ -4,6 +4,43 @@ Le numéro affiché dans **Réglages** (et dans la colonne latérale sur grand �
 correspond à celui de `js/version.js`. Le cache hors ligne (`sw.js`) porte le même
 numéro : le changer suffit à faire récupérer la nouvelle version à l'app installée.
 
+## 1.6.0 — préférences alimentaires, import en lot, réglages de base
+
+Les quatre chantiers notés dans `TODO.md`.
+
+**Préférences alimentaires**
+- Régime (omnivore, sans porc, pescétarien, végétarien, végétalien), allergènes à écarter
+  (gluten, lactose, œuf, fruits à coque, arachide, soja, poisson, crustacés, porc, alcool)
+  et ingrédients bannis à la main
+- Les recettes non conformes sont **signalées** partout (carnet, bibliothèque, placard,
+  fiche) avec le motif, pas supprimées ; option pour les masquer
+- Filtre « Compatible » dans le carnet et dans la bibliothèque
+- Avertissement au moment d'ajouter un repas non conforme au planning
+- Étiquetage de 11 catégories sur les clés du barème existant
+
+**Import en lot**
+- Un collage contenant plusieurs recettes est découpé automatiquement : séparateurs
+  explicites (`---`), sinon détection des titres suivis d'une liste d'ingrédients
+- Aperçu en liste avec cases à cocher, détail dépliable, recettes déjà présentes
+  décochées d'office
+- Un texte ambigu reste une seule recette : mieux vaut une recette à corriger que
+  trois charcutées
+
+**Réglages de base**
+- Thème clair / sombre / auto
+- Premier jour de la semaine (lundi ou dimanche)
+- Créneaux de repas planifiés (petit-déjeuner, midi, goûter, dîner)
+- Enseigne et ville du barème de prix
+- Repère calorique ajustable
+
+**Cette installation**
+- Adresse de l'app affichée, copiable et partageable, pour l'ouvrir sur un autre appareil
+- Pas de QR code : aucun moyen de vérifier ici qu'il se scanne réellement
+
+**Corrections**
+- Changer le premier jour de la semaine ne décalait pas la semaine affichée (ancre figée)
+- « Lait de coco » était donné pour du lactose par repli sur la clé « lait »
+
 ## 1.5.0 — le placard
 
 - Nouvel onglet **Placard** : lister ce qu'on a sous la main

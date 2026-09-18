@@ -37,8 +37,9 @@
   color-scheme: light;
 }
 
+/* Thème : « auto » suit le système ; un choix explicite pose data-theme sur <html>. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #0C0D11;
     --bg-elev: #16181F;
     --bg-sunken: #101219;
@@ -52,6 +53,21 @@
     --shadow-lg: 0 16px 48px -16px rgba(0, 0, 0, 0.75);
     color-scheme: dark;
   }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0C0D11;
+  --bg-elev: #16181F;
+  --bg-sunken: #101219;
+  --text: #F3F4F6;
+  --text-2: #AEB3BE;
+  --muted: #838A97;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --accent-soft: rgba(255, 107, 53, 0.18);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -16px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 16px 48px -16px rgba(0, 0, 0, 0.75);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -548,6 +564,10 @@ input, textarea, select { -webkit-appearance: none; appearance: none; }
 }
 .item.done { opacity: .6; }
 
+/* sélection à cocher (import en lot) */
+.item .check.on { background: var(--green); border-color: var(--green); color: #fff; }
+.item.pending { opacity: .62; }
+
 /* --------------------------------------------------------------- planning */
 
 .day {
@@ -957,6 +977,26 @@ input, textarea, select { -webkit-appearance: none; appearance: none; }
 }
 
 .tab span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* lignes de réglages : le contrôle passe sous le libellé quand c'est serré */
+.row.stack { flex-wrap: wrap; row-gap: 10px; }
+.row .trail-wide { flex: none; }
+@media (max-width: 520px) {
+  .row.stack .trail-wide { flex: 1 0 100%; }
+  .row.stack .segmented { width: 100%; }
+}
+.app-url { word-break: break-all; color: var(--text-2) !important; }
+
+/* préférences alimentaires */
+.tag.diet-warn {
+  background: color-mix(in srgb, var(--red) 15%, transparent);
+  color: var(--red);
+}
+.note.diet-note {
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--red) 28%, transparent);
+}
 
 /* ------------------------------------------------------------------ toast */
 

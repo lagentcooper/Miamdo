@@ -122,6 +122,15 @@ que l'ordinateur soit allumé. Pratique pour essayer, pas pour tous les jours.
   aucune enseigne ne publie de tarifs exploitables hors ligne. Deux ou trois corrections
   après tes premières courses et l'estimation colle à ton magasin.
 
+**Préférences alimentaires**
+- Régime (omnivore, sans porc, pescétarien, végétarien, végétalien), allergènes à écarter,
+  et ingrédients bannis à la main
+- Les recettes non conformes sont **signalées** avec le motif — carnet, bibliothèque,
+  placard, fiche — plutôt que supprimées ; une option permet de les masquer
+- Filtre « Compatible », et avertissement au moment de planifier un repas non conforme
+- ⚠️ L'étiquetage est **indicatif et incomplet** : en cas d'allergie sérieuse, l'emballage
+  reste la seule source fiable
+
 **Placard — cuisiner ce qu'on a**
 - Liste ce que tu as sous la main (« 500 g de poulet », « courgettes »), en saisie libre
   ou via les ajouts rapides
@@ -146,6 +155,9 @@ que l'ordinateur soit allumé. Pratique pour essayer, pas pour tous les jours.
 - 💡 **Parcourir des idées** : bibliothèque de 49 recettes filtrable par **catégorie**,
   **temps** (20 / 45 min max) et **budget** (2 / 4 € par personne max), avec le coût
   estimé affiché avant l'ajout
+- 📋 Le collage accepte **plusieurs recettes d'un coup** : le texte est découpé
+  automatiquement, chaque recette s'affiche avec une case à cocher, et celles déjà
+  présentes dans le carnet sont décochées d'office
 
 **Sur grand écran**
 
@@ -155,6 +167,14 @@ les feuilles modales deviennent des **boîtes de dialogue centrées**, et les gr
 déplient — jusqu'à 4 recettes par ligne, 3 jours de planning côte à côte, 3 rayons de
 courses en parallèle. Les états de survol apparaissent sur les appareils à souris.
 Vérifié de 320 px à 1920 px sans débordement horizontal.
+
+**Réglages**
+- Thème clair / sombre / automatique
+- Premier jour de la semaine (lundi ou dimanche)
+- Créneaux de repas planifiés : petit-déjeuner, midi, goûter, dîner
+- Enseigne et ville du barème de prix, repère calorique, portions par défaut
+- **Cette installation** : l'adresse de l'app, copiable et partageable pour l'ouvrir
+  sur un autre appareil
 
 **Le reste**
 - Mode sombre automatique, gestes iOS (feuilles modales qu'on referme en glissant)
@@ -178,6 +198,8 @@ js/
   utils.js              unités & conversions, lecture des quantités, rayons, dates
   prices.js             moteur d'estimation des coûts
   pantry.js             placard : basiques, rapprochements, suggestions
+  diet.js               préférences alimentaires : régime, allergènes, bannis
+  slots.js              créneaux de repas configurables
   library.js            conversion des idées de la bibliothèque en recettes
   nutrition.js          moteur d'estimation des apports
   measure.js            conversions partagées (cuillères, pièces, conserves → grammes)
@@ -190,8 +212,9 @@ js/
   data/nutrition.js     table de composition (225 aliments)
   data/staples.js       basiques supposés toujours présents
   data/families.js      ingrédients interchangeables
+  data/allergens.js     étiquetage des ingrédients (11 catégories)
   views/                recipes · week · shopping · settings · pickers
-                        pricesView · importText · library · share · pantry
+                        pricesView · importText · library · share · pantry · dietView
 assets/icons/           icônes de l'app (générées depuis tools/icon.svg)
 tools/render-icons.mjs  régénère les PNG depuis le SVG (npm i -D playwright)
 ```
@@ -208,7 +231,9 @@ tools/render-icons.mjs  régénère les PNG depuis le SVG (npm i -D playwright)
   "list":       [{ "name", "qty", "unit", "rayon", "checked", "sources" }],
   "prices":     { "lardon": { "price": 14.9, "unit": "kg" } },   // corrections perso
   "pantry":     [{ "name", "qty", "unit", "rayon" }],            // ce qu'on a sous la main
-  "settings":   { "defaultServings": 2, "showPrices": true, "showNutrition": true }
+  "settings":   { "defaultServings", "theme", "weekStart", "slots", "store",
+                  "kcalReference", "showPrices", "showNutrition", "assumeStaples",
+                  "diet": { "regime", "exclusions", "banned", "hide" } }
 }
 ```
 

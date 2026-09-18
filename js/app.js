@@ -155,8 +155,16 @@ window.addEventListener('hashchange', () => {
 });
 window.addEventListener('miamdo:navigate', (e) => navigate(e.detail));
 
+/** Applique le thème choisi : « auto » laisse le système décider. */
+function applyTheme() {
+  const theme = store.getState().settings.theme || 'auto';
+  if (theme === 'auto') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = theme;
+}
+
 // l'état change → on redessine (liste, planning, recettes restent synchronisés)
-store.subscribe(() => render());
+store.subscribe(() => { applyTheme(); render(); });
+applyTheme();
 
 render({ animate: true });
 if (location.hash.slice(1) !== current) location.hash = current;

@@ -2,13 +2,10 @@
 
 import * as store from '../store.js';
 import { icon, openSheet, toast, haptic } from '../ui.js';
-import { escapeHtml, formatTime, DAYS, isoDate, weekDates, weekLabel, isToday, addDays } from '../utils.js';
-import { weekState } from '../weekstate.js';
-
-const SLOTS = [
-  { id: 'midi', label: 'Midi' },
-  { id: 'diner', label: 'Dîner' },
-];
+import { escapeHtml, formatTime, dayName, isoDate, weekDates, weekLabel, isToday, addDays } from '../utils.js';
+import { weekState, currentWeekStart } from '../weekstate.js';
+import { activeSlots, defaultSlot } from '../slots.js';
+import { checkRecipe, dietActive, problemSummary } from '../diet.js';
 
 /** Liste de recettes filtrable ; `onPick(recipe)` à la sélection. */
 export function openRecipePicker(onPick, { title = 'Choisir une recette' } = {}) {
@@ -79,8 +76,8 @@ export function openRecipePicker(onPick, { title = 'Choisir une recette' } = {})
 export function openDayPicker(recipeId, servings) {
   const recipe = store.getRecipe(recipeId);
   if (!recipe) return;
-  let monday = new Date(weekState.monday);
-  let slot = 'diner';
+  let monday = currentWeekStart(weekState.monday);
+  let slot = defaultSlot();
   let portions = servings || recipe.servings;
 
   openSheet({
@@ -103,7 +100,7 @@ export function openDayPicker(recipeId, servings) {
           </div>
 
           <div class="segmented" style="margin-bottom:14px">
-            ${SLOTS.map((s) => `<button type="button" class="${slot === s.id ? 'active' : ''}" data-slot="${s.id}">${s.label}</button>`).join('')}
+            ${activeSlots().map((s) => `<button type="button" class="${slot === s.id ? 'active' : ''}" data-slot="${s.id}">${s.label}</button>`).join('')}
           </div>
 
           <div class="week-nav">
@@ -113,12 +110,12 @@ export function openDayPicker(recipeId, servings) {
           </div>
 
           <div class="rows">
-            ${weekDates(monday).map((d, i) => {
+            ${weekDates(monday).map((d) => {
               const iso = isoDate(d);
               const n = store.getState().plan[iso]?.length || 0;
               return `<button type="button" class="row" data-day="${iso}">
                 <span class="grow">
-                  <span class="primary">${DAYS[i]}${isToday(d) ? ' <span class="tag" style="--tag-color:var(--accent)">aujourd’hui</span>' : ''}</span>
+                  <span class="primary">${dayName(d)}${isToday(d) ? ' <span class="tag" style="--tag-color:var(--accent)">aujourd’hui</span>' : ''}</span>
                   <span class="secondary">${d.getDate()}/${String(d.getMonth() + 1).padStart(2, '0')}${n ? ` · ${n} repas prévu${n > 1 ? 's' : ''}` : ''}</span>
                 </span>
                 ${icon('plus', 'chevron')}
@@ -137,7 +134,11 @@ export function openDayPicker(recipeId, servings) {
             store.planAdd(b.dataset.day, recipeId, { servings: portions, slot });
             haptic(12);
             api.close();
-            toast(`${recipe.name} planifié`, { action: 'Annuler', onAction: () => store.undo() });
+            const { ok, problems } = dietActive() ? checkRecipe(recipe) : { ok: true };
+            toast(ok
+              ? `${recipe.name} planifié`
+              : `${recipe.name} planifié — ⚠︎ ${problemSummary(problems)}`,
+            { action: 'Annuler', onAction: () => store.undo() });
           }));
       };
       draw();

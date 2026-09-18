@@ -9,6 +9,16 @@ import { getState } from './store.js';
 
 export { PRICE_META };
 
+/** Enseigne et ville du barème, tels que réglés par l'utilisateur. */
+export function storeMeta() {
+  const conf = getState().settings.store || {};
+  return {
+    enseigne: conf.name || PRICE_META.enseigne,
+    ville: conf.city || PRICE_META.ville,
+    releve: PRICE_META.releve,
+  };
+}
+
 const euro = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
 export const formatEuro = (n) => euro.format(Math.round(n * 100) / 100);
 

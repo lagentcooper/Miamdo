@@ -321,13 +321,22 @@ export const isoDate = (d) => {
   return x.toISOString().slice(0, 10);
 };
 
-/** Lundi de la semaine contenant `date`. */
-export function startOfWeek(date = new Date()) {
+/**
+ * Premier jour de la semaine contenant `date`.
+ * `weekStart` : 1 = lundi (défaut), 0 = dimanche.
+ */
+export function startOfWeek(date = new Date(), weekStart = 1) {
   const d = new Date(date);
   d.setHours(12, 0, 0, 0);
-  const day = (d.getDay() + 6) % 7; // 0 = lundi
-  d.setDate(d.getDate() - day);
+  const offset = (d.getDay() - weekStart + 7) % 7;
+  d.setDate(d.getDate() - offset);
   return d;
+}
+
+/** « Lundi », « Mardi »… déduit de la date elle-même. */
+export function dayName(date) {
+  const nom = new Date(date).toLocaleDateString('fr-FR', { weekday: 'long' });
+  return nom.charAt(0).toUpperCase() + nom.slice(1);
 }
 
 export function addDays(date, n) {

@@ -7,6 +7,19 @@ import { SEED_CATEGORIES, SEED_RECIPES } from './data/seed.js';
 const KEY = 'miamdo.state.v1';
 const SCHEMA = 1;
 
+/** Réglages de base, appliqués tant que l'utilisateur n'a rien choisi. */
+export const DEFAULT_SETTINGS = {
+  defaultServings: 2,
+  theme: 'auto',            // 'auto' | 'light' | 'dark'
+  weekStart: 1,             // 1 = lundi, 0 = dimanche
+  slots: ['midi', 'diner'],
+  store: { name: 'Intermarché', city: 'Toulouse' },
+  kcalReference: 2000,
+  showPrices: true,
+  showNutrition: true,
+  assumeStaples: true,
+};
+
 const listeners = new Set();
 let undoSnapshot = null;
 
@@ -48,7 +61,7 @@ function initialState() {
     list: [],
     prices: {},
     pantry: [],
-    settings: { defaultServings: 2, seeded: true },
+    settings: { ...DEFAULT_SETTINGS, seeded: true },
   };
 }
 
@@ -67,7 +80,7 @@ function load() {
       list: parsed.list || [],
       prices: parsed.prices || {},
       pantry: parsed.pantry || [],
-      settings: { defaultServings: 2, ...(parsed.settings || {}) },
+      settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) },
     };
   } catch (err) {
     console.error('Lecture du stockage impossible, retour aux données par défaut', err);
@@ -498,7 +511,7 @@ export function importData(json, { merge = false } = {}) {
       s.list = incoming.list;
       s.prices = incoming.prices;
       s.pantry = incoming.pantry;
-      s.settings = { defaultServings: 2, ...incoming.settings };
+      s.settings = { ...DEFAULT_SETTINGS, ...incoming.settings };
     }
   }, { undoLabel: 'Import de données' });
   return incoming.recipes.length;
