@@ -31,6 +31,7 @@ const PATHS = {
   list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
   flame: '<path d="M12 2s4 4.2 4 8a4 4 0 0 1-8 0c0-1 .3-1.8.6-2.4C7 9.4 6 11.4 6 14a6 6 0 0 0 12 0c0-5-6-12-6-12z"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
+  fridge: '<rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M5 10h14"/><path d="M8.5 5.5v2"/><path d="M8.5 13v2.5"/>',
   share: '<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="m8 7 4-4 4 4M12 3v13"/>',
 };
 

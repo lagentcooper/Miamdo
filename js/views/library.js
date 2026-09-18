@@ -2,34 +2,13 @@
 
 import * as store from '../store.js';
 import { icon, openSheet, toast, haptic } from '../ui.js';
-import { escapeHtml, formatTime, formatQty, parseQuantity, guessRayon, normalize, uid } from '../utils.js';
-import { LIBRARY, LIB_TAGS } from '../data/library.js';
+import { escapeHtml, formatTime, formatQty, normalize } from '../utils.js';
+import { LIB_TAGS } from '../data/library.js';
+import { LIBRARY, buildRecipe, libraryRecipes } from '../library.js';
 import { recipeCost, formatEuro } from '../prices.js';
 import { recipeNutrition, formatKcal } from '../nutrition.js';
 
-/** Transforme une entrée de bibliothèque en recette exploitable. */
-export function buildRecipe(entry) {
-  const ingredients = entry.ingredients.map((line) => {
-    const parsed = parseQuantity(line) || { name: line, qty: 0, unit: 'qs' };
-    return {
-      id: uid('ing'),
-      name: parsed.name,
-      qty: parsed.qty,
-      unit: parsed.unit,
-      rayon: guessRayon(parsed.name),
-    };
-  });
-  return {
-    name: entry.name,
-    emoji: entry.emoji,
-    servings: entry.servings,
-    time: entry.time,
-    ingredients,
-    steps: [...entry.steps],
-    categoryIds: [],
-    notes: '',
-  };
-}
+export { buildRecipe };
 
 /** Retrouve (ou crée) les catégories correspondant aux tags d'une idée. */
 function resolveCategories(tags) {
@@ -58,8 +37,7 @@ export function openLibrary({ onEdit } = {}) {
     render: (api) => {
       const draw = () => {
         const q = normalize(ui.query);
-        const entries = LIBRARY.map((entry) => {
-          const recipe = buildRecipe(entry);
+        const entries = libraryRecipes().map(({ entry, recipe }) => {
           const cost = recipeCost(recipe, recipe.servings);
           return { entry, recipe, cost, added: alreadyAdded(entry.name) };
         }).filter(({ entry, recipe, cost }) => {
@@ -141,6 +119,17 @@ export function openLibrary({ onEdit } = {}) {
       draw();
     },
   });
+}
+
+/** Ouvre l'aperçu d'une idée à partir de son entrée de bibliothèque. */
+export function openLibraryIdea(entry, options = {}) {
+  const recipe = buildRecipe(entry);
+  openIdea({
+    entry,
+    recipe,
+    cost: recipeCost(recipe, recipe.servings),
+    added: alreadyAdded(entry.name),
+  }, options);
 }
 
 /** Aperçu d'une idée avant de l'ajouter au carnet. */

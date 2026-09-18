@@ -138,10 +138,11 @@ export function render({ topbar, view }) {
     const value = quick.value.trim();
     if (!value) return;
     const parsed = parseQuickAdd(value);
+    // vider avant le commit : celui-ci déclenche un rendu qui restaure la
+    // valeur du champ actif, et le texte reviendrait.
+    quick.value = '';
     store.addManualItem(parsed);
     haptic(12);
-    quick.value = '';
-    rerender();
     setTimeout(() => view.querySelector('[data-quick]')?.focus(), 0);
   };
   quick.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitQuick(); } });

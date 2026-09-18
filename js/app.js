@@ -6,12 +6,14 @@ import * as recipes from './views/recipes.js';
 import * as week from './views/week.js';
 import * as shopping from './views/shopping.js';
 import * as settings from './views/settings.js';
+import * as pantry from './views/pantry.js';
 import { readSharedLink, openSharedRecipe } from './views/share.js';
 import { openRecipeEditor } from './views/recipes.js';
 import { APP_VERSION } from './version.js';
 
 const TABS = [
   { id: 'recipes', label: 'Recettes', ic: 'book', view: recipes },
+  { id: 'pantry', label: 'Placard', ic: 'fridge', view: pantry },
   { id: 'week', label: 'Semaine', ic: 'calendar', view: week },
   { id: 'shopping', label: 'Courses', ic: 'cart', view: shopping },
   { id: 'settings', label: 'Réglages', ic: 'sliders', view: settings },
@@ -118,7 +120,7 @@ function onScroll() {
 window.addEventListener('scroll', onScroll, { passive: true });
 
 // chaque vue peut demander son propre rafraîchissement
-[recipes, week, shopping].forEach((m) => m.setRerender?.(render));
+[recipes, week, shopping, pantry].forEach((m) => m.setRerender?.(render));
 
 function navigate(id, { push = true } = {}) {
   if (!TABS.some((t) => t.id === id)) return;

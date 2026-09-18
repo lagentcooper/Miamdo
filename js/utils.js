@@ -103,23 +103,57 @@ export function formatQty(qty, unit) {
   return label ? `${n} ${label}` : n;
 }
 
+// mots de liaison ignorés dans les rapprochements
+const PARTICLES = new Set(['de', 'du', 'des', 'd', 'la', 'le', 'les', 'l', 'a', 'au', 'aux', 'en']);
+
+/** Mots porteurs de sens d'un libellé : « huile d'olive » → ['huile', 'olive']. */
+const contentWords = (str) => normalize(str).split(' ').filter((w) => w && !PARTICLES.has(w));
+
+/** Idem, au singulier : « petits pois » → ['petit', 'poi']. */
+const contentWordsSingular = (str) => ingredientKey(str).split(' ').filter((w) => w && !PARTICLES.has(w));
+
+/** `needle` apparaît-il comme suite de mots entiers dans `hay` ? */
+function containsWords(hay, needle) {
+  if (!needle.length || needle.length > hay.length) return false;
+  for (let i = 0; i <= hay.length - needle.length; i += 1) {
+    let ok = true;
+    for (let j = 0; j < needle.length; j += 1) {
+      if (hay[i + j] !== needle[j]) { ok = false; break; }
+    }
+    if (ok) return true;
+  }
+  return false;
+}
+
 /**
  * Rapproche un nom d'ingrédient d'une liste de clés de référence.
  * La clé la plus longue qui « tient » dans le nom gagne : « huile d'olive »
- * l'emporte sur « olive ». La comparaison se fait aussi au singulier des deux
- * côtés pour rattraper « petits pois » ↔ « petit pois ».
+ * l'emporte sur « olive ». La comparaison porte sur des **mots entiers** —
+ * sans quoi « cuisses de volaille » tomberait sur la clé « ail » — et se fait
+ * aussi au singulier des deux côtés (« petits pois » ↔ « petit pois »).
  */
 export function bestKeyMatch(name, keys) {
-  const plain = normalize(name);
-  const singular = ingredientKey(name);
+  const plain = contentWords(name);
+  const singular = contentWordsSingular(name);
   let best = null;
   for (const key of keys) {
     if (best && key.length <= best.length) continue;
-    if (plain.includes(key) || singular.includes(key) || singular.includes(ingredientKey(key))) {
+    const words = contentWords(key);
+    if (containsWords(plain, words)
+      || containsWords(singular, words)
+      || containsWords(singular, contentWordsSingular(key))) {
       best = key;
     }
   }
   return best;
+}
+
+/** Deux libellés d'ingrédients désignent-ils la même chose ? (« poulet » ↔ « filets de poulet ») */
+export function sameIngredient(a, b) {
+  const wa = contentWordsSingular(a);
+  const wb = contentWordsSingular(b);
+  if (!wa.length || !wb.length) return false;
+  return containsWords(wa, wb) || containsWords(wb, wa);
 }
 
 /* ------------------------------------------------- lecture d'une quantité */

@@ -4,6 +4,25 @@ Le numéro affiché dans **Réglages** (et dans la colonne latérale sur grand �
 correspond à celui de `js/version.js`. Le cache hors ligne (`sw.js`) porte le même
 numéro : le changer suffit à faire récupérer la nouvelle version à l'app installée.
 
+## 1.5.0 — le placard
+
+- Nouvel onglet **Placard** : lister ce qu'on a sous la main
+- Les **condiments et basiques** (sel, huile, épices, bouillon…) sont supposés présents et
+  ne comptent jamais comme manquants ; la liste est modifiable, et l'hypothèse désactivable
+- **Suggestions** classées par ce qui manque, puis par ce qu'elles écoulent du placard,
+  piochées dans le carnet **et** dans la bibliothèque d'idées
+- **Affinage en un tap** : « il te manque des lardons » → *j'en ai* → la recette remonte
+  aussitôt dans « tu peux le faire maintenant »
+- Curseur de tolérance : 0 à 3 ingrédients manquants
+- Familles d'ingrédients interchangeables (pâtes ↔ spaghettis, crème ↔ crème liquide…)
+- Signalement des ingrédients du placard qu'aucune suggestion n'utilise
+- Correction : le rapprochement des ingrédients se fait par **mots entiers** —
+  « cuisses de volaille » tombait sur la clé « ail » (donc facturé et compté comme de l'ail)
+- Correction : les champs d'ajout rapide (placard et courses) ne se vidaient pas, la saisie
+  revenait après le rendu
+- Correction : `.grow` n'était appliqué que dans certaines listes ; ailleurs les lignes
+  ne prenaient pas toute la largeur (courses, feuilles modales)
+
 ## 1.4.0 — mise en page adaptative
 
 - Colonne latérale de navigation à partir de 900 px, à la place de la barre d'onglets

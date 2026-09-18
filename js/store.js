@@ -47,6 +47,7 @@ function initialState() {
     plan: {},
     list: [],
     prices: {},
+    pantry: [],
     settings: { defaultServings: 2, seeded: true },
   };
 }
@@ -65,6 +66,7 @@ function load() {
       plan: parsed.plan || {},
       list: parsed.list || [],
       prices: parsed.prices || {},
+      pantry: parsed.pantry || [],
       settings: { defaultServings: 2, ...(parsed.settings || {}) },
     };
   } catch (err) {
@@ -367,6 +369,76 @@ export function generateFromPlan(dayIsoList, { replace = true } = {}) {
   return additions.length;
 }
 
+/* ---------------------------------------------------------------- placard */
+
+/** Ajoute un ingrédient au placard (ou met à jour celui qui y est déjà). */
+export function addPantryItem({ name, qty = 0, unit = 'qs' }) {
+  const clean = String(name || '').trim();
+  if (!clean) return null;
+  const label = clean.charAt(0).toUpperCase() + clean.slice(1);
+  const existing = state.pantry.find((i) => ingredientKey(i.name) === ingredientKey(label));
+  if (existing) {
+    commit((s) => {
+      const item = s.pantry.find((i) => i.id === existing.id);
+      if (item && qty) { item.qty = qty; item.unit = unit; }
+    });
+    return existing;
+  }
+  const item = {
+    id: uid('pan'),
+    name: label,
+    qty: Number(qty) || 0,
+    unit: UNITS[unit] ? unit : 'qs',
+    rayon: guessRayon(label),
+    addedAt: Date.now(),
+  };
+  commit((s) => s.pantry.push(item));
+  return item;
+}
+
+export function updatePantryItem(id, patch) {
+  commit((s) => {
+    const item = s.pantry.find((i) => i.id === id);
+    if (item) Object.assign(item, patch);
+  });
+}
+
+export function removePantryItem(id) {
+  commit((s) => {
+    s.pantry = s.pantry.filter((i) => i.id !== id);
+  }, { undoLabel: 'Ingrédient retiré du placard' });
+}
+
+export function clearPantry() {
+  commit((s) => { s.pantry = []; }, { undoLabel: 'Placard vidé' });
+}
+
+/** Active ou désactive un basique supposé disponible. */
+export function toggleStaple(key, label) {
+  commit((s) => {
+    const conf = s.settings.staples || { added: [], removed: [] };
+    const added = conf.added || [];
+    const removed = conf.removed || [];
+    if (added.some((x) => x.key === key)) {
+      s.settings.staples = { added: added.filter((x) => x.key !== key), removed };
+      return;
+    }
+    s.settings.staples = removed.includes(key)
+      ? { added, removed: removed.filter((k) => k !== key) }
+      : { added, removed: [...removed, key] };
+  });
+}
+
+/** Ajoute un basique personnel (« j'ai toujours de la crème »). */
+export function addStaple({ key, label }) {
+  commit((s) => {
+    const conf = s.settings.staples || { added: [], removed: [] };
+    const added = conf.added || [];
+    if (added.some((x) => x.key === key)) return;
+    s.settings.staples = { added: [...added, { key, label }], removed: conf.removed || [] };
+  });
+}
+
 /* ------------------------------------------------------------------- prix */
 
 /** Corrige le prix de référence d'un produit (ou en ajoute un nouveau). */
@@ -408,6 +480,7 @@ export function importData(json, { merge = false } = {}) {
     plan: parsed.plan || {},
     list: parsed.list || [],
     prices: parsed.prices || {},
+    pantry: parsed.pantry || [],
     settings: parsed.settings || {},
   };
   commit((s) => {
@@ -424,6 +497,7 @@ export function importData(json, { merge = false } = {}) {
       s.plan = incoming.plan;
       s.list = incoming.list;
       s.prices = incoming.prices;
+      s.pantry = incoming.pantry;
       s.settings = { defaultServings: 2, ...incoming.settings };
     }
   }, { undoLabel: 'Import de données' });

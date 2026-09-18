@@ -479,6 +479,7 @@ input, textarea, select { -webkit-appearance: none; appearance: none; }
 }
 .row:last-child { border-bottom: 0; }
 .row:active { background: var(--bg-sunken); }
+.grow { flex: 1; min-width: 0; }
 .row .grow { flex: 1; min-width: 0; }
 .row .primary { display: block; font-size: 15.5px; font-weight: 600; letter-spacing: -.1px; }
 .row .secondary { display: block; font-size: 12.5px; color: var(--muted); margin-top: 1px; }
@@ -901,6 +902,62 @@ input, textarea, select { -webkit-appearance: none; appearance: none; }
 }
 .day-head .kcal + .add { margin-left: 8px; }
 
+/* placard — suggestions */
+.suggestions { display: grid; gap: 10px; }
+@media (min-width: 760px) { .suggestions { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); } }
+
+.suggestion {
+  padding: 13px 14px;
+  border-radius: var(--r-lg);
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  transition: transform .15s, box-shadow .15s;
+}
+.suggestion:active { transform: scale(.985); }
+.suggestion .s-name {
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: -.2px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.suggestion .s-meta { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.suggestion .s-ok { font-size: 13px; font-weight: 700; color: var(--green); margin-top: 8px; }
+.suggestion .s-missing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+  font-size: 12.5px;
+}
+.suggestion .s-missing .chip {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+.suggestion .s-missing .chip b { font-weight: 800; }
+
+.match-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--bg-sunken);
+  overflow: hidden;
+  margin: 8px 0 2px;
+}
+.match-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--grad);
+  transition: width .35s cubic-bezier(.2,.8,.3,1);
+}
+
+.tab span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* ------------------------------------------------------------------ toast */
 
 .toast-host {
@@ -1026,11 +1083,11 @@ input, textarea, select { -webkit-appearance: none; appearance: none; }
    ========================================================================== */
 
 /* grilles fluides dès qu'il y a de la place */
-.day-grid, .aisle-grid { display: grid; gap: 14px; }
+.day-grid, .aisle-grid, .pantry-grid { display: grid; gap: 14px; }
 @media (min-width: 760px) {
   .day-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start; }
-  .aisle-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); align-items: start; }
-  .day-grid .day, .aisle-grid .aisle { margin-bottom: 0; }
+  .aisle-grid, .pantry-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); align-items: start; }
+  .day-grid .day, .aisle-grid .aisle, .pantry-grid .aisle { margin-bottom: 0; }
 }
 @media (min-width: 1180px) {
   .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
