@@ -3,7 +3,7 @@
 import * as store from '../store.js';
 import { icon, openSheet, confirmSheet, toast, haptic, delegate } from '../ui.js';
 import {
-  escapeHtml, dayName, isoDate, weekDates, weekLabel, isToday, addDays, formatTime,
+  escapeHtml, dayName, isoDate, weekDates, weekLabel, isToday, isPast, addDays, formatTime,
 } from '../utils.js';
 import { weekState, currentWeekStart } from '../weekstate.js';
 import { activeSlots, slotLabel, defaultSlot } from '../slots.js';
@@ -41,7 +41,7 @@ export function render({ topbar, view }) {
     const iso = isoDate(date);
     const meals = store.getState().plan[iso] || [];
     return `
-      <section class="day ${isToday(date) ? 'today' : ''}">
+      <section class="day ${isToday(date) ? 'today' : ''}${isPast(date) ? ' past' : ''}">
         <header class="day-head">
           <div>
             <div class="dname">${dayName(date)}</div>
@@ -51,7 +51,7 @@ export function render({ topbar, view }) {
           ${(() => {
             if (!withNutrition || !meals.length) return '';
             const n = dayNutrition(meals, store.getRecipe);
-            return n && n.kcal ? `<span class="kcal">${formatKcal(n.kcal)} / pers</span>` : '';
+            return n && n.kcal ? `<span class="kcal">${formatKcal(n.kcal)}/pers</span>` : '';
           })()}
           <button type="button" class="icon-btn plain add" data-add-day="${iso}" aria-label="Ajouter un repas">${icon('plus')}</button>
         </header>
@@ -89,7 +89,8 @@ export function render({ topbar, view }) {
         <button type="button" class="btn" data-add-day="${isoList[0]}">${icon('plus')} Planifier un repas</button>
       </div>`}
     <div class="day-grid" style="margin-top:16px">${days.map(dayCard).join('')}</div>
-    ${planned ? `<button type="button" class="btn btn-block btn-danger" style="margin-top:6px" data-clear-week>${icon('trash')} Vider la semaine</button>` : ''}`;
+    ${planned ? `<button type="button" class="btn btn-block btn-danger" style="margin-top:6px" data-clear-week>${icon('trash')} Vider la semaine</button>` : ''}
+    <div data-spacer aria-hidden="true"></div>`;
 
   /* interactions */
   delegate(topbar, '[data-week]', 'click', (e, el) => {
@@ -99,6 +100,7 @@ export function render({ topbar, view }) {
   });
   delegate(topbar, '[data-today]', 'click', () => {
     weekState.monday = currentWeekStart();
+    scrollToToday = true;
     rerender();
   });
   delegate(view, '[data-add-day]', 'click', (e, el) => {
@@ -117,6 +119,12 @@ export function render({ topbar, view }) {
     });
     window.dispatchEvent(new CustomEvent('miamdo:navigate', { detail: 'shopping' }));
   });
+  // après le rendu, on se place sur aujourd'hui si c'est demandé
+  if (scrollToToday) {
+    scrollToToday = false;
+    revealToday(view);
+  }
+
   delegate(view, '[data-clear-week]', 'click', async () => {
     const ok = await confirmSheet({
       title: 'Vider la semaine ?',
@@ -131,6 +139,52 @@ export function render({ topbar, view }) {
 
 let rerender = () => {};
 export function setRerender(fn) { rerender = fn; }
+
+// Le planning s'ouvre sur le jour courant ; les jours déjà passés restent
+// au-dessus, il suffit de remonter pour les revoir.
+let scrollToToday = true;
+export function onEnter() { scrollToToday = true; }
+
+/**
+ * Amène la carte du jour juste sous l'en-tête.
+ * En deux passes : la première positionne, la seconde rattrape le décalage
+ * laissé par la mise en page qui finit de se stabiliser (hauteur du bandeau,
+ * retours à la ligne).
+ */
+function revealToday(container) {
+  // position dans le document, insensible aux transformations : l'animation
+  // d'entrée translate la vue, ce qui fausserait getBoundingClientRect().
+  const docTop = (el) => {
+    let y = 0;
+    for (let node = el; node; node = node.offsetParent) y += node.offsetTop;
+    return y;
+  };
+
+  const place = () => {
+    const card = container.querySelector('.day.today');
+    if (!card) return;
+    const marge = (document.getElementById('topbar')?.offsetHeight || 0) + 8;
+    const cible = docTop(card) - marge;
+
+    // en fin de semaine il n'y a plus assez de contenu en dessous pour que le
+    // jour courant atteigne le haut : on ajoute exactement ce qui manque.
+    const spacer = container.querySelector('[data-spacer]');
+    if (spacer) {
+      // calcul hors spacer, sinon la seconde passe le remettrait à zéro ;
+      // quelques pixels de marge car l'animation d'entrée gonfle brièvement
+      // la hauteur défilable du document.
+      const sansSpacer = document.documentElement.scrollHeight - spacer.offsetHeight;
+      const manque = cible + window.innerHeight - sansSpacer;
+      spacer.style.height = `${Math.max(0, Math.ceil(manque) + 16)}px`;
+    }
+
+    window.scrollTo({ top: Math.max(0, cible), behavior: 'auto' });
+  };
+  requestAnimationFrame(() => {
+    place();
+    requestAnimationFrame(place);
+  });
+}
 
 /* ------------------------------------------------ choix midi/dîner + portions */
 

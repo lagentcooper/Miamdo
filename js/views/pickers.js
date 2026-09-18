@@ -2,7 +2,9 @@
 
 import * as store from '../store.js';
 import { icon, openSheet, toast, haptic } from '../ui.js';
-import { escapeHtml, formatTime, dayName, isoDate, weekDates, weekLabel, isToday, addDays } from '../utils.js';
+import {
+  escapeHtml, formatTime, dayName, isoDate, weekDates, weekLabel, isToday, isPast, addDays,
+} from '../utils.js';
 import { weekState, currentWeekStart } from '../weekstate.js';
 import { activeSlots, defaultSlot } from '../slots.js';
 import { checkRecipe, dietActive, problemSummary } from '../diet.js';
@@ -79,12 +81,19 @@ export function openDayPicker(recipeId, servings) {
   let monday = currentWeekStart(weekState.monday);
   let slot = defaultSlot();
   let portions = servings || recipe.servings;
+  // on ne propose pas de planifier dans le passé : la liste démarre aujourd'hui
+  let showPast = false;
 
   openSheet({
     title: 'Planifier',
     leftLabel: 'Annuler',
     render: (api) => {
       const draw = () => {
+        const jours = weekDates(monday);
+        // les jours révolus ne sont retirés que sur la semaine en cours
+        const caches = jours.some(isToday) && !showPast ? jours.filter(isPast) : [];
+        const visibles = jours.filter((d) => !caches.includes(d));
+
         api.body.innerHTML = `
           <div class="hstack" style="margin-bottom:14px">
             <span style="font-size:26px">${recipe.emoji}</span>
@@ -109,11 +118,16 @@ export function openDayPicker(recipeId, servings) {
             <button type="button" class="icon-btn" data-w="1" aria-label="Semaine suivante">${icon('right')}</button>
           </div>
 
+          ${caches.length ? `
+            <button type="button" class="btn btn-sm btn-ghost btn-block" data-show-past style="margin-bottom:6px">
+              ${icon('left')} Afficher ${caches.length} jour${caches.length > 1 ? 's' : ''} passé${caches.length > 1 ? 's' : ''}
+            </button>` : ''}
+
           <div class="rows">
-            ${weekDates(monday).map((d) => {
+            ${visibles.map((d) => {
               const iso = isoDate(d);
               const n = store.getState().plan[iso]?.length || 0;
-              return `<button type="button" class="row" data-day="${iso}">
+              return `<button type="button" class="row ${isPast(d) ? 'past-day' : ''}" data-day="${iso}">
                 <span class="grow">
                   <span class="primary">${dayName(d)}${isToday(d) ? ' <span class="tag" style="--tag-color:var(--accent)">aujourd’hui</span>' : ''}</span>
                   <span class="secondary">${d.getDate()}/${String(d.getMonth() + 1).padStart(2, '0')}${n ? ` · ${n} repas prévu${n > 1 ? 's' : ''}` : ''}</span>
@@ -127,8 +141,17 @@ export function openDayPicker(recipeId, servings) {
           b.addEventListener('click', () => { portions = Math.max(1, portions + Number(b.dataset.p)); haptic(); draw(); }));
         api.body.querySelectorAll('[data-slot]').forEach((b) =>
           b.addEventListener('click', () => { slot = b.dataset.slot; haptic(); draw(); }));
+        api.body.querySelector('[data-show-past]')?.addEventListener('click', () => {
+          showPast = true;
+          haptic();
+          draw();
+        });
         api.body.querySelectorAll('[data-w]').forEach((b) =>
-          b.addEventListener('click', () => { monday = addDays(monday, 7 * Number(b.dataset.w)); draw(); }));
+          b.addEventListener('click', () => {
+            monday = addDays(monday, 7 * Number(b.dataset.w));
+            showPast = false;
+            draw();
+          }));
         api.body.querySelectorAll('[data-day]').forEach((b) =>
           b.addEventListener('click', () => {
             store.planAdd(b.dataset.day, recipeId, { servings: portions, slot });

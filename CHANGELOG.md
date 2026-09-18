@@ -4,6 +4,19 @@ Le numéro affiché dans **Réglages** (et dans la colonne latérale sur grand �
 correspond à celui de `js/version.js`. Le cache hors ligne (`sw.js`) porte le même
 numéro : le changer suffit à faire récupérer la nouvelle version à l'app installée.
 
+## 1.6.1 — le planning s'ouvre sur aujourd'hui
+
+- Le planning se positionne sur le **jour courant** à l'ouverture de l'onglet ; les jours
+  déjà passés restent au-dessus, il suffit de remonter pour les revoir
+- Ils sont légèrement estompés, pour qu'on comprenne pourquoi la vue démarre au milieu
+- Un espace est ajouté en bas de la semaine quand il en manque, afin que le jour courant
+  puisse atteindre le haut de l'écran même le dimanche
+- Le positionnement ne rejoue qu'à l'entrée dans l'onglet : cocher un repas ou ouvrir une
+  fiche ne fait plus sauter le défilement
+- Le sélecteur de jour (depuis une recette) **démarre au jour courant** au lieu du lundi ;
+  un bouton déplie les jours passés, et les autres semaines restent affichées en entier
+- En-tête de jour resserré : nom, date, calories et bouton tiennent sur deux lignes
+
 ## 1.6.0 — préférences alimentaires, import en lot, réglages de base
 
 Les quatre chantiers notés dans `TODO.md`.
