@@ -11,7 +11,8 @@ import { openPriceForIngredient } from './pricesView.js';
 import { openImportSheet } from './importText.js';
 import { openLibrary } from './library.js';
 import { openShareSheet } from './share.js';
-import { recipeNutrition, macroShare, formatKcal, formatGrams, shareOfDay, NUTRITION_META } from '../nutrition.js';
+import { checkRecipe, dietActive, problemSummary, applyDietFilter } from '../diet.js';
+import { recipeNutrition, macroShare, formatKcal, formatGrams, shareOfDay, kcalReference } from '../nutrition.js';
 
 const ui = { query: '', filter: 'all' };
 
@@ -34,7 +35,7 @@ export function nutritionBlock(recipe, servings) {
       <div class="nutri-top">
         <b>${formatKcal(n.perServing.kcal)}</b>
         <span class="lbl">par portion</span>
-        <span class="right">${pct} % du repère ${NUTRITION_META.reference} kcal</span>
+        <span class="right">${pct} % du repère ${kcalReference()} kcal</span>
       </div>
       <div class="macro-bar">
         <i style="width:${share.prot}%;background:#7C6BF0"></i>
@@ -72,7 +73,16 @@ function matches(recipe, state) {
   }
   if (ui.filter === 'all') return true;
   if (ui.filter === 'fav') return recipe.favorite;
+  if (ui.filter === 'diet') return checkRecipe(recipe).ok;
   return recipe.categoryIds.includes(ui.filter);
+}
+
+/** Pastille « ne colle pas à tes préférences », vide si rien à signaler. */
+export function dietBadge(recipe) {
+  if (!dietActive()) return '';
+  const { ok, problems } = checkRecipe(recipe);
+  if (ok) return '';
+  return `<span class="tag diet-warn" title="${escapeHtml(problemSummary(problems))}">⚠︎ ${escapeHtml(problemSummary(problems))}</span>`;
 }
 
 function recipeCard(recipe) {
@@ -86,7 +96,7 @@ function recipeCard(recipe) {
         aria-label="Favori">${recipe.favorite ? iconFilled('heart') : icon('heart')}</span>
       <span class="emoji">${recipe.emoji}</span>
       <h3>${escapeHtml(recipe.name)}</h3>
-      <span class="tags">${tags
+      <span class="tags">${dietBadge(recipe)}${tags
         .map((t) => `<span class="tag" style="--tag-color:${t.color}">${t.emoji} ${escapeHtml(t.name)}</span>`)
         .join('')}</span>
       <span class="meta">
@@ -102,7 +112,7 @@ function recipeCard(recipe) {
 
 export function render({ topbar, view }) {
   const state = store.getState();
-  const list = state.recipes.filter((r) => matches(r, state));
+  const list = applyDietFilter(state.recipes.filter((r) => matches(r, state)));
 
   topbar.innerHTML = `
     <div class="topbar-row">
@@ -120,6 +130,8 @@ export function render({ topbar, view }) {
     <div class="chips">
       <button type="button" class="chip ${ui.filter === 'all' ? 'active' : ''}" data-filter="all">Tout</button>
       <button type="button" class="chip ${ui.filter === 'fav' ? 'active' : ''}" data-filter="fav">❤️ Favoris</button>
+      ${dietActive() ? `<button type="button" class="chip ${ui.filter === 'diet' ? 'active' : ''}"
+        style="--chip-color:var(--green)" data-filter="diet">🍃 Compatible</button>` : ''}
       ${state.categories
         .map((c) => `<button type="button" class="chip ${ui.filter === c.id ? 'active' : ''}"
           style="--chip-color:${c.color}" data-filter="${c.id}">${c.emoji} ${escapeHtml(c.name)}</button>`)
@@ -249,6 +261,15 @@ export function openRecipeDetail(id) {
             </div>
           </div>
 
+          ${(() => {
+            if (!dietActive()) return '';
+            const { ok, problems } = checkRecipe(recipe);
+            return ok ? '' : `<div class="note diet-note" style="margin-bottom:14px">
+              <b>Ne colle pas à tes préférences</b> — ${escapeHtml(problemSummary(problems))}.<br>
+              ${problems.map((p) => escapeHtml(p.ingredient)).join(', ')}.
+            </div>`;
+          })()}
+
           <div class="hstack" style="gap:8px">
             <button type="button" class="btn btn-primary" style="flex:1" data-add>${icon('cart')} Ajouter aux courses</button>
             <button type="button" class="btn" data-plan aria-label="Planifier">${icon('calendar')}</button>
@@ -283,7 +304,7 @@ export function openRecipeDetail(id) {
                 ${icon('tag')} ${cost.missing.length} ingrédient${cost.missing.length > 1 ? 's' : ''} sans prix — compléter
               </button>` : ''}
             <p class="muted" style="font-size:12px;line-height:1.5;margin:10px 2px 0">
-              Estimation d’après le barème Intermarché indicatif, ajustable dans Réglages → Mes prix.
+              Estimation d’après un barème indicatif, ajustable dans Réglages → Mes prix.
             </p>` : ''}
 
           ${nutritionShown() && recipe.ingredients.length ? `

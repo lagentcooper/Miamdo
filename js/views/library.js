@@ -7,6 +7,7 @@ import { LIB_TAGS } from '../data/library.js';
 import { LIBRARY, buildRecipe, libraryRecipes } from '../library.js';
 import { recipeCost, formatEuro } from '../prices.js';
 import { recipeNutrition, formatKcal } from '../nutrition.js';
+import { checkRecipe, dietActive, problemSummary, dietConfig } from '../diet.js';
 
 export { buildRecipe };
 
@@ -29,7 +30,7 @@ const alreadyAdded = (name) =>
   store.getState().recipes.some((r) => normalize(r.name) === normalize(name));
 
 export function openLibrary({ onEdit } = {}) {
-  const ui = { query: '', tag: 'all', time: 0, budget: 0 };
+  const ui = { query: '', tag: 'all', time: 0, budget: 0, diet: false };
 
   openSheet({
     title: 'Idées de recettes',
@@ -41,6 +42,7 @@ export function openLibrary({ onEdit } = {}) {
           const cost = recipeCost(recipe, recipe.servings);
           return { entry, recipe, cost, added: alreadyAdded(entry.name) };
         }).filter(({ entry, recipe, cost }) => {
+          if ((ui.diet || dietConfig().hide) && !checkRecipe(recipe).ok) return false;
           if (ui.tag !== 'all' && !entry.cats.includes(ui.tag)) return false;
           if (ui.time && (!entry.time || entry.time > ui.time)) return false;
           if (ui.budget && cost.perServing > ui.budget) return false;
@@ -70,6 +72,8 @@ export function openLibrary({ onEdit } = {}) {
             <button type="button" class="chip ${ui.time === 45 ? 'active' : ''}" data-time="45">⏱ 45 min max</button>
             <button type="button" class="chip ${ui.budget === 2 ? 'active' : ''}" data-budget="2">💶 2 €/pers max</button>
             <button type="button" class="chip ${ui.budget === 4 ? 'active' : ''}" data-budget="4">💶 4 €/pers max</button>
+            ${dietActive() ? `<button type="button" class="chip ${ui.diet ? 'active' : ''}"
+              style="--chip-color:var(--green)" data-diet-filter>🍃 Compatible</button>` : ''}
           </div>
 
           <div class="muted" style="font-size:13px;margin:0 4px 8px">
@@ -80,7 +84,8 @@ export function openLibrary({ onEdit } = {}) {
             <button type="button" class="row" data-open="${escapeHtml(entry.name)}">
               <span style="font-size:24px">${entry.emoji}</span>
               <span class="grow">
-                <span class="primary">${escapeHtml(entry.name)}${added ? ' <span class="tag" style="--tag-color:var(--green)">ajoutée</span>' : ''}</span>
+                <span class="primary">${escapeHtml(entry.name)}${added ? ' <span class="tag" style="--tag-color:var(--green)">ajoutée</span>' : ''}${
+                  dietActive() && !checkRecipe(recipe).ok ? ` <span class="tag diet-warn">⚠︎ ${escapeHtml(problemSummary(checkRecipe(recipe).problems))}</span>` : ''}</span>
                 <span class="secondary">${formatTime(entry.time)} · ${recipe.servings} portions · ${recipe.ingredients.length} ingr.
                   ${cost.total ? `· ≈ ${formatEuro(cost.perServing)}/pers` : ''}</span>
               </span>
@@ -105,6 +110,11 @@ export function openLibrary({ onEdit } = {}) {
             ui.time = ui.time === Number(b.dataset.time) ? 0 : Number(b.dataset.time);
             haptic(); draw();
           }));
+        api.body.querySelector('[data-diet-filter]')?.addEventListener('click', () => {
+          ui.diet = !ui.diet;
+          haptic();
+          draw();
+        });
         api.body.querySelectorAll('[data-budget]').forEach((b) =>
           b.addEventListener('click', () => {
             ui.budget = ui.budget === Number(b.dataset.budget) ? 0 : Number(b.dataset.budget);
@@ -150,6 +160,13 @@ function openIdea({ entry, recipe, cost, added }, { onEdit, onAdded } = {}) {
             </div>
           </div>
         </div>
+
+        ${(() => {
+          if (!dietActive()) return '';
+          const { ok, problems } = checkRecipe(recipe);
+          return ok ? '' : `<div class="note diet-note" style="margin-bottom:14px">
+            <b>Ne colle pas à tes préférences</b> — ${escapeHtml(problemSummary(problems))}.</div>`;
+        })()}
 
         ${cost.total ? `
           <div class="budget" style="margin-bottom:14px">

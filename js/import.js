@@ -195,6 +195,70 @@ export function parseRecipeText(raw) {
   };
 }
 
+/* ------------------------------------------------------- collage en lot */
+
+// Séparateur explicite entre deux recettes : une ligne de tirets, d'égales…
+const SEPARATOR = /\r?\n\s*[-=_*~]{3,}\s*(?:\r?\n|$)/;
+
+/** Une ligne peut-elle être le titre d'une nouvelle recette ? */
+function looksLikeTitle(line, previousBlank) {
+  if (!previousBlank) return false;
+  if (!line || line.length > 60) return false;
+  if (BULLET.test(line) || NUMBERED.test(line)) return false;
+  if (ING_HEADER.test(line) || STEP_HEADER.test(line) || NOTE_HEADER.test(line)) return false;
+  if (META_LINE.test(line) || SIGNATURE.test(line)) return false;
+  if (readServings(line) || durationOf(line)) return false;
+  const parsed = parseQuantity(line);
+  if (parsed && parsed.qty > 0) return false;
+  return !looksLikeStep(line, false);
+}
+
+/**
+ * Découpe un collage qui contient plusieurs recettes.
+ * D'abord sur les séparateurs explicites ; sinon sur les lignes qui ressemblent
+ * à des titres et sont suivies d'une liste d'ingrédients. Si le doute subsiste,
+ * on renvoie un seul bloc — mieux vaut une recette à corriger que trois charcutées.
+ */
+export function splitRecipes(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return [];
+
+  const explicit = text.split(SEPARATOR).map((t) => t.trim()).filter(Boolean);
+  if (explicit.length > 1) return explicit;
+
+  const lines = text.split(/\r?\n/);
+  const starts = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    const previousBlank = i === 0 || !lines[i - 1].trim();
+    if (!looksLikeTitle(line, previousBlank)) continue;
+    // un titre n'en est un que s'il est suivi d'ingrédients
+    const suite = lines.slice(i + 1, i + 10);
+    const hasIngredients = suite.some((l) => {
+      const t = l.trim();
+      if (!t) return false;
+      if (ING_HEADER.test(t) || BULLET.test(t)) return true;
+      const parsed = parseQuantity(t);
+      return !!parsed && parsed.qty > 0;
+    });
+    if (hasIngredients) starts.push(i);
+  }
+
+  if (starts.length < 2) return [text];
+
+  return starts.map((start, index) => {
+    const end = index + 1 < starts.length ? starts[index + 1] : lines.length;
+    return lines.slice(start, end).join('\n').trim();
+  }).filter(Boolean);
+}
+
+/** Lit un collage contenant une ou plusieurs recettes. */
+export function parseRecipes(raw) {
+  return splitRecipes(raw)
+    .map((block) => parseRecipeText(block))
+    .filter((r) => r && (r.ingredients.length || r.steps.length));
+}
+
 /** Vrai si le texte collé ressemble à une recette exploitable. */
 export function looksLikeRecipe(parsed) {
   return !!parsed && (parsed.ingredients.length >= 2 || parsed.steps.length >= 2);

@@ -7,6 +7,7 @@ import { suggest, frequentIngredients, unusedItems, staples, isStaple } from '..
 import { DEFAULT_STAPLES } from '../data/staples.js';
 import { openRecipeDetail } from './recipes.js';
 import { openLibraryIdea } from './library.js';
+import { checkRecipe, dietActive, problemSummary, dietConfig } from '../diet.js';
 
 const ui = { maxMissing: 2 };
 
@@ -16,7 +17,11 @@ export function render({ topbar, view }) {
   const state = store.getState();
   const items = state.pantry;
   const assume = state.settings.assumeStaples !== false;
-  const suggestions = suggest({ maxMissing: ui.maxMissing, limit: 30 });
+  const toutes = suggest({ maxMissing: ui.maxMissing, limit: 40 });
+  // les préférences alimentaires s'appliquent aussi aux suggestions
+  const suggestions = (dietConfig().hide
+    ? toutes.filter((s) => checkRecipe(s.recipe).ok)
+    : toutes).slice(0, 30);
   const orphans = items.length ? unusedItems(suggestions) : [];
 
   topbar.innerHTML = `
@@ -57,6 +62,8 @@ export function render({ topbar, view }) {
           <div class="s-name">${escapeHtml(s.recipe.name)}
             <span class="tag" style="--tag-color:${s.source === 'carnet' ? 'var(--accent)' : 'var(--muted)'}">
               ${s.source === 'carnet' ? 'mon carnet' : 'idée'}</span>
+            ${dietActive() && !checkRecipe(s.recipe).ok
+              ? `<span class="tag diet-warn">⚠︎ ${escapeHtml(problemSummary(checkRecipe(s.recipe).problems))}</span>` : ''}
           </div>
           <div class="s-meta">
             utilise ${s.uses.length} de tes ingrédient${s.uses.length > 1 ? 's' : ''}${

@@ -4,6 +4,7 @@
 // Valeurs indicatives — pour situer un plat, pas pour un suivi médical.
 
 import { bestKeyMatch } from './utils.js';
+import { getState } from './store.js';
 import { toMeasure } from './measure.js';
 import { NUTRITION, NUTRIENTS, NUTRITION_META } from './data/nutrition.js';
 
@@ -104,5 +105,9 @@ export function dayNutrition(entries, getRecipe) {
   return known ? total : null;
 }
 
-/** Part d'un repère journalier (2 000 kcal par défaut). */
-export const shareOfDay = (kcal) => Math.round((kcal / NUTRITION_META.reference) * 100);
+/** Repère journalier retenu (2 000 kcal par défaut). */
+export const kcalReference = () =>
+  Number(getState().settings.kcalReference) || NUTRITION_META.reference;
+
+/** Part de ce repère journalier. */
+export const shareOfDay = (kcal) => Math.round((kcal / kcalReference()) * 100);

@@ -3,7 +3,7 @@
 import * as store from '../store.js';
 import { icon, openSheet, confirmSheet, toast, haptic } from '../ui.js';
 import { escapeHtml, normalize } from '../utils.js';
-import { allEntries, formatEuro, unitLabel, PRICE_META, findEntry } from '../prices.js';
+import { allEntries, formatEuro, unitLabel, storeMeta, findEntry } from '../prices.js';
 
 const UNIT_OPTIONS = [
   { id: 'kg', label: 'au kilo (€/kg)' },
@@ -34,7 +34,7 @@ export function openPriceManager() {
 
         api.body.innerHTML = `
           <div class="note" style="margin-bottom:12px">
-            Barème indicatif <b>${PRICE_META.enseigne} · ${PRICE_META.ville}</b> (${PRICE_META.releve}).
+            Barème indicatif <b>${storeMeta().enseigne} · ${storeMeta().ville}</b> (${storeMeta().releve}).
             Ce sont des ordres de grandeur saisis à la main, pas des prix relevés en direct.
             Corrige un prix d’après ton ticket : l’estimation devient juste pour toi et
             l’app s’en sert partout.

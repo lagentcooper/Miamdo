@@ -3,22 +3,25 @@
 import * as store from '../store.js';
 import { icon, openSheet, confirmSheet, toast, haptic, delegate } from '../ui.js';
 import {
-  escapeHtml, DAYS, isoDate, weekDates, weekLabel, isToday, addDays, startOfWeek, formatTime,
+  escapeHtml, dayName, isoDate, weekDates, weekLabel, isToday, addDays, formatTime,
 } from '../utils.js';
-import { weekState } from '../weekstate.js';
+import { weekState, currentWeekStart } from '../weekstate.js';
+import { activeSlots, slotLabel, defaultSlot } from '../slots.js';
 import { openRecipePicker } from './pickers.js';
 import { openRecipeDetail } from './recipes.js';
 import { planCost, recipeCost, formatEuro } from '../prices.js';
+import { checkRecipe, dietActive, problemSummary } from '../diet.js';
 import { dayNutrition, formatKcal } from '../nutrition.js';
 
-const SLOT_LABEL = { midi: 'Midi', diner: 'Dîner' };
-
 export function render({ topbar, view }) {
+  // l'ancre est recalée sur le premier jour réglé : changer lundi ↔ dimanche
+  // dans les Réglages doit décaler la semaine affichée.
+  weekState.monday = currentWeekStart(weekState.monday);
   const monday = weekState.monday;
   const days = weekDates(monday);
   const isoList = days.map(isoDate);
   const planned = store.countPlanned(isoList);
-  const thisWeek = isoDate(startOfWeek(new Date())) === isoDate(monday);
+  const thisWeek = isoDate(currentWeekStart()) === isoDate(monday);
   const withPrices = store.getState().settings.showPrices !== false;
   const budget = withPrices ? planCost(isoList, store.getRecipe) : null;
   const withNutrition = store.getState().settings.showNutrition !== false;
@@ -34,14 +37,14 @@ export function render({ topbar, view }) {
       <button type="button" class="icon-btn" data-week="1" aria-label="Semaine suivante">${icon('right')}</button>
     </div>`;
 
-  const dayCard = (date, i) => {
+  const dayCard = (date) => {
     const iso = isoDate(date);
     const meals = store.getState().plan[iso] || [];
     return `
       <section class="day ${isToday(date) ? 'today' : ''}">
         <header class="day-head">
           <div>
-            <div class="dname">${DAYS[i]}</div>
+            <div class="dname">${dayName(date)}</div>
             <div class="dnum">${date.getDate()} ${date.toLocaleDateString('fr-FR', { month: 'long' })}</div>
           </div>
           ${isToday(date) ? '<span class="today-pill">aujourd’hui</span>' : ''}
@@ -64,7 +67,7 @@ export function render({ topbar, view }) {
                     <div class="mmeta">${m.servings} portions${r.time ? ` · ${formatTime(r.time)}` : ''}${
                       withPrices ? ` · <span class="price muted-price">≈ ${formatEuro(recipeCost(r, m.servings).total)}</span>` : ''}</div>
                   </span>
-                  <span class="slot">${SLOT_LABEL[m.slot] || ''}</span>
+                  <span class="slot">${slotLabel(m.slot)}</span>
                 </div>`;
             }).join('')
           : `<div class="empty-day">Rien de prévu — <a href="#" data-add-day="${iso}" style="color:var(--accent);font-weight:600;text-decoration:none">ajouter un repas</a></div>`}
@@ -95,7 +98,7 @@ export function render({ topbar, view }) {
     rerender();
   });
   delegate(topbar, '[data-today]', 'click', () => {
-    weekState.monday = startOfWeek(new Date());
+    weekState.monday = currentWeekStart();
     rerender();
   });
   delegate(view, '[data-add-day]', 'click', (e, el) => {
@@ -132,7 +135,7 @@ export function setRerender(fn) { rerender = fn; }
 /* ------------------------------------------------ choix midi/dîner + portions */
 
 function openSlotSheet(dayIso, recipe) {
-  let slot = 'diner';
+  let slot = defaultSlot();
   let portions = recipe.servings;
   openSheet({
     title: 'Ajouter au planning',
@@ -142,7 +145,11 @@ function openSlotSheet(dayIso, recipe) {
       store.planAdd(dayIso, recipe.id, { servings: portions, slot });
       haptic(12);
       api.close();
-      toast(`${recipe.name} ajouté`, { action: 'Annuler', onAction: () => store.undo() });
+      const { ok, problems } = dietActive() ? checkRecipe(recipe) : { ok: true };
+      toast(ok
+        ? `${recipe.name} ajouté`
+        : `${recipe.name} ajouté — ⚠︎ ${problemSummary(problems)}`,
+      { action: 'Annuler', onAction: () => store.undo() });
     },
     render: (api) => {
       const draw = () => {
@@ -155,8 +162,7 @@ function openSlotSheet(dayIso, recipe) {
             </div>
           </div>
           <div class="segmented" style="margin-bottom:16px">
-            <button type="button" class="${slot === 'midi' ? 'active' : ''}" data-slot="midi">Midi</button>
-            <button type="button" class="${slot === 'diner' ? 'active' : ''}" data-slot="diner">Dîner</button>
+            ${activeSlots().map((s) => `<button type="button" class="${slot === s.id ? 'active' : ''}" data-slot="${s.id}">${s.label}</button>`).join('')}
           </div>
           <div class="hstack">
             <div class="grow"><b>Portions</b><div class="muted" style="font-size:13px">Ajuste selon le nombre de convives</div></div>
@@ -194,15 +200,14 @@ function openMealActions(dayIso, entryId) {
             </div>
           </div>
           <div class="segmented" style="margin-bottom:16px">
-            <button type="button" class="${entry.slot === 'midi' ? 'active' : ''}" data-slot="midi">Midi</button>
-            <button type="button" class="${entry.slot === 'diner' ? 'active' : ''}" data-slot="diner">Dîner</button>
+            ${activeSlots().map((s) => `<button type="button" class="${entry.slot === s.id ? 'active' : ''}" data-slot="${s.id}">${s.label}</button>`).join('')}
           </div>
           <div class="field">
             <label>Déplacer vers</label>
             <select class="select" data-move>
               ${weekDates(weekState.monday).map((d, i) => {
                 const iso = isoDate(d);
-                return `<option value="${iso}" ${iso === dayIso ? 'selected' : ''}>${DAYS[i]} ${d.getDate()}</option>`;
+                return `<option value="${iso}" ${iso === dayIso ? 'selected' : ''}>${dayName(d)} ${d.getDate()}</option>`;
               }).join('')}
             </select>
           </div>
