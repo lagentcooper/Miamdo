@@ -122,6 +122,21 @@ que l'ordinateur soit allumé. Pratique pour essayer, pas pour tous les jours.
   aucune enseigne ne publie de tarifs exploitables hors ligne. Deux ou trois corrections
   après tes premières courses et l'estimation colle à ton magasin.
 
+**Placard — cuisiner ce qu'on a**
+- Liste ce que tu as sous la main (« 500 g de poulet », « courgettes »), en saisie libre
+  ou via les ajouts rapides
+- Les **condiments et basiques** sont supposés présents : inutile de déclarer le sel,
+  l'huile ou les épices, ils ne comptent jamais comme manquants. La liste est modifiable,
+  tu peux y ajouter les tiens, ou désactiver l'hypothèse
+- **Suggestions** triées par ce qui manque, puis par ce qu'elles écoulent du placard —
+  puisées dans ton carnet **et** dans la bibliothèque d'idées
+- **Affinage en un tap** : sur « il te manque des lardons », le bouton *＋* déclare que tu
+  en as finalement, et la recette remonte aussitôt dans « tu peux le faire maintenant »
+- Curseur de tolérance de 0 à 3 ingrédients manquants, pour élargir quand rien ne colle
+- Familles interchangeables : avoir des pâtes suffit pour une recette qui demande
+  des spaghettis
+- L'app dit aussi ce que **rien n'utilise**, pour savoir ce qui va rester sur les bras
+
 **Ajouter une recette — trois chemins**
 - ✍️ **Créer de zéro** : éditeur complet (ingrédients quantifiés, étapes, catégories)
 - 📋 **Coller depuis une note** : colle le texte d'une recette (Notes, SMS, site web),
@@ -162,6 +177,8 @@ js/
   store.js              état + persistance localStorage + agrégation de la liste
   utils.js              unités & conversions, lecture des quantités, rayons, dates
   prices.js             moteur d'estimation des coûts
+  pantry.js             placard : basiques, rapprochements, suggestions
+  library.js            conversion des idées de la bibliothèque en recettes
   nutrition.js          moteur d'estimation des apports
   measure.js            conversions partagées (cuillères, pièces, conserves → grammes)
   import.js             lecture d'une recette collée en texte libre
@@ -171,8 +188,10 @@ js/
   data/prices.js        barème de prix indicatif (221 produits)
   data/library.js       bibliothèque de 49 idées de recettes
   data/nutrition.js     table de composition (225 aliments)
+  data/staples.js       basiques supposés toujours présents
+  data/families.js      ingrédients interchangeables
   views/                recipes · week · shopping · settings · pickers
-                        pricesView · importText · library · share
+                        pricesView · importText · library · share · pantry
 assets/icons/           icônes de l'app (générées depuis tools/icon.svg)
 tools/render-icons.mjs  régénère les PNG depuis le SVG (npm i -D playwright)
 ```
@@ -188,6 +207,7 @@ tools/render-icons.mjs  régénère les PNG depuis le SVG (npm i -D playwright)
   "plan":       { "2026-09-14": [{ "recipeId", "servings", "slot" }] },
   "list":       [{ "name", "qty", "unit", "rayon", "checked", "sources" }],
   "prices":     { "lardon": { "price": 14.9, "unit": "kg" } },   // corrections perso
+  "pantry":     [{ "name", "qty", "unit", "rayon" }],            // ce qu'on a sous la main
   "settings":   { "defaultServings": 2, "showPrices": true, "showNutrition": true }
 }
 ```
