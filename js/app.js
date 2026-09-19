@@ -158,6 +158,26 @@ window.addEventListener('hashchange', () => {
 });
 window.addEventListener('miamdo:navigate', (e) => navigate(e.detail));
 
+/**
+ * iOS peut raccourcir le bloc conteneur initial en mode plein écran : la
+ * hauteur retenue vaut alors l'écran moins l'encoche, alors que l'origine
+ * reste en haut de l'écran. Un élément en `position: fixed; bottom: 0` —
+ * la barre d'onglets — se retrouve d'autant au-dessus du bas.
+ * On mesure l'écart et on le compense ; partout ailleurs il vaut zéro et
+ * la règle est sans effet.
+ */
+function fitViewport() {
+  // uniquement en app installée : dans un onglet de navigateur, l'écart entre
+  // l'écran et la zone de page est normal (barres d'outils) et ne doit rien corriger.
+  const enApp = window.matchMedia?.('(display-mode: standalone)').matches
+    || navigator.standalone === true;
+  const hauteurReelle = Math.max(window.innerHeight || 0, enApp ? (window.screen?.height || 0) : 0);
+  const ecart = enApp ? hauteurReelle - document.documentElement.clientHeight : 0;
+  // borné : on rattrape un décalage de barre système, pas autre chose
+  const correction = ecart > 0 && ecart < 120 ? Math.round(ecart) : 0;
+  document.documentElement.style.setProperty('--vp-fix', `${correction}px`);
+}
+
 /** Applique le thème choisi : « auto » laisse le système décider. */
 function applyTheme() {
   const theme = store.getState().settings.theme || 'auto';
@@ -168,6 +188,10 @@ function applyTheme() {
 // l'état change → on redessine (liste, planning, recettes restent synchronisés)
 store.subscribe(() => { applyTheme(); render(); });
 applyTheme();
+
+fitViewport();
+window.addEventListener('resize', fitViewport);
+window.addEventListener('orientationchange', fitViewport);
 
 render({ animate: true });
 if (location.hash.slice(1) !== current) location.hash = current;

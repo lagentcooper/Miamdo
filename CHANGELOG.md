@@ -4,6 +4,19 @@ Le numéro affiché dans **Réglages** (et dans la colonne latérale sur grand �
 correspond à celui de `js/version.js`. Le cache hors ligne (`sw.js`) porte le même
 numéro : le changer suffit à faire récupérer la nouvelle version à l'app installée.
 
+## 1.6.3 — barre d'onglets collée au bas de l'écran
+
+Sur iPhone en app installée, la barre d'onglets flottait au-dessus du bas de l'écran sur
+les pages qui ne défilent pas (liste de courses vide), laissant une bande de fond en
+dessous. Mesuré sur la capture : exactement la hauteur de l'encoche.
+
+- `height: 100%` sur `html`/`body` remplacé par `min-height`, et hauteur de coque en `dvh` :
+  `100%` se résout sur le bloc conteneur initial, qu'iOS raccourcit en plein écran
+- fond posé sur `<html>` : la zone hors page ne peut plus rester nue
+- compensation mesurée à l'exécution (`--vp-fix`) pour les éléments ancrés en bas — barre
+  d'onglets, feuilles modales, notifications, bouton flottant. Elle ne s'applique qu'en app
+  installée, et reste bornée : dans un navigateur elle vaut zéro et ne change rien
+
 ## 1.6.2 — la liste couvre tout le planning
 
 - La liste de courses se génère sur **tout le planning à venir**, et non plus sur la seule

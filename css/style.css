@@ -72,9 +72,21 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/*
+ * Hauteur de la coque : `height: 100%` se résout sur le bloc conteneur initial,
+ * qu'iOS raccourcit dans certains états (mode plein écran, barres système).
+ * Sur une page qui ne défile pas, la barre d'onglets se retrouvait alors
+ * quelques dizaines de points au-dessus du bas de l'écran. `dvh` suit la
+ * hauteur réellement visible ; `vh` reste le repli pour iOS < 16.4.
+ * Le fond est posé sur <html> pour que la zone hors page ne reste jamais nue.
+ */
+html {
+  background: var(--bg);
+}
+
 html, body {
   margin: 0;
-  height: 100%;
+  min-height: 100%;
   overscroll-behavior-y: none;
 }
 
@@ -104,7 +116,8 @@ input, textarea, select { -webkit-appearance: none; appearance: none; }
 /* ------------------------------------------------------------- app shell */
 
 #app {
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -188,10 +201,12 @@ input, textarea, select { -webkit-appearance: none; appearance: none; }
 
 .tabbar {
   position: fixed;
-  left: 0; right: 0; bottom: 0;
+  left: 0; right: 0;
+  /* --vp-fix compense le bloc conteneur raccourci d'iOS (voir app.js) */
+  bottom: calc(-1 * var(--vp-fix, 0px));
   z-index: 40;
   display: flex;
-  padding: 6px calc(var(--sal) + 6px) calc(var(--sab) + 4px) calc(var(--sar) + 6px);
+  padding: 6px calc(var(--sal) + 6px) max(var(--sab), 4px) calc(var(--sar) + 6px);
   background: color-mix(in srgb, var(--bg-elev) 72%, transparent);
   -webkit-backdrop-filter: var(--blur);
   backdrop-filter: var(--blur);
@@ -278,7 +293,7 @@ input, textarea, select { -webkit-appearance: none; appearance: none; }
 .fab {
   position: fixed;
   right: calc(var(--sar) + 18px);
-  bottom: calc(var(--tab-h) + var(--sab) + 18px);
+  bottom: calc(var(--tab-h) + var(--sab) + 18px - var(--vp-fix, 0px));
   z-index: 35;
   width: 56px; height: 56px;
   border-radius: 50%;
@@ -658,7 +673,8 @@ input, textarea, select { -webkit-appearance: none; appearance: none; }
 
 .sheet {
   position: fixed;
-  left: 0; right: 0; bottom: 0;
+  left: 0; right: 0;
+  bottom: calc(-1 * var(--vp-fix, 0px));
   z-index: 51;
   max-height: 92vh;
   display: flex;
@@ -1021,7 +1037,7 @@ input, textarea, select { -webkit-appearance: none; appearance: none; }
 .toast-host {
   position: fixed;
   left: 0; right: 0;
-  bottom: calc(var(--tab-h) + var(--sab) + 12px);
+  bottom: calc(var(--tab-h) + var(--sab) + 12px - var(--vp-fix, 0px));
   z-index: 60;
   display: flex;
   flex-direction: column;
