@@ -123,10 +123,13 @@ window.addEventListener('scroll', onScroll, { passive: true });
 [recipes, week, shopping, pantry].forEach((m) => m.setRerender?.(render));
 
 function navigate(id, { push = true } = {}) {
-  if (!TABS.some((t) => t.id === id)) return;
+  const tab = TABS.find((t) => t.id === id);
+  if (!tab) return;
   scrollMemory[current] = window.scrollY;
   current = id;
   if (push && location.hash.slice(1) !== id) location.hash = id;
+  // la vue peut vouloir se positionner elle-même (le planning s'ouvre sur aujourd'hui)
+  tab.view.onEnter?.();
   render({ animate: true });
   window.scrollTo({ top: scrollMemory[id] || 0, behavior: 'instant' in window ? 'instant' : 'auto' });
 }
