@@ -83,6 +83,14 @@ export function render({ topbar, view }) {
       <button type="button" class="icon-btn accent" data-quick-go aria-label="Ajouter">${icon('check')}</button>
     </div>
 
+    ${store.listOutdated() && store.countPlanned(scopeDays('future')) ? `
+      <div class="note stale-note">
+        <span><b>Ton planning a changé</b> depuis la dernière génération de la liste.</span>
+        <button type="button" class="btn btn-sm btn-soft" data-regen>
+          ${icon('refresh')} Régénérer la liste
+        </button>
+      </div>` : ''}
+
     ${items.length ? `
       ${budget && budget.total ? `
         <div class="budget">
@@ -125,9 +133,10 @@ export function render({ topbar, view }) {
       <div class="empty">
         <div class="ic">🛒</div>
         <h3>Ta liste est vide</h3>
-        <p>Génère-la depuis ton planning de la semaine, pioche dans tes recettes, ou ajoute des articles à la main.</p>
+        <p>Génère-la depuis ton planning — tous les repas à venir, même à cheval sur deux
+          semaines — pioche dans tes recettes, ou ajoute des articles à la main.</p>
         <div class="hstack" style="justify-content:center;gap:8px;flex-wrap:wrap">
-          <button type="button" class="btn btn-primary" data-generate>${icon('sparkles')} Depuis la semaine</button>
+          <button type="button" class="btn btn-primary" data-generate>${icon('sparkles')} Depuis mon planning</button>
           <button type="button" class="btn" data-from-recipe>${icon('book')} Depuis une recette</button>
         </div>
       </div>`}`;
@@ -160,7 +169,8 @@ export function render({ topbar, view }) {
     store.clearChecked();
     toast('Articles cochés effacés', { action: 'Annuler', onAction: () => store.undo() });
   });
-  delegate(view, '[data-generate]', 'click', generateFromWeek);
+  delegate(view, '[data-generate]', 'click', () => generateFromPlanning('future'));
+  delegate(view, '[data-regen]', 'click', () => generateFromPlanning('future'));
   delegate(view, '[data-missing]', 'click', () => openPriceForIngredient(budget.missing[0]));
   delegate(view, '[data-from-recipe]', 'click', () => {
     openRecipePicker((recipe) => {
@@ -174,15 +184,30 @@ export function render({ topbar, view }) {
 let rerender = () => {};
 export function setRerender(fn) { rerender = fn; }
 
-function generateFromWeek() {
-  const isoList = weekDates(weekState.monday).map(isoDate);
-  if (!store.countPlanned(isoList)) {
-    toast('Aucun repas planifié cette semaine');
+/** Les trois périmètres possibles pour générer la liste. */
+export function scopeDays(scope) {
+  if (scope === 'week') return weekDates(weekState.monday).map(isoDate);
+  if (scope === 'all') return store.plannedDays();
+  return store.plannedDays({ from: store.todayIso() });
+}
+
+const SCOPE_LABEL = {
+  future: 'tout le planning à venir',
+  week: 'la semaine affichée',
+  all: 'tout le planning',
+};
+
+function generateFromPlanning(scope = 'future') {
+  const jours = scopeDays(scope);
+  const repas = store.countPlanned(jours);
+  if (!repas) {
+    toast(scope === 'week' ? 'Aucun repas cette semaine' : 'Aucun repas planifié à venir');
     return;
   }
-  const n = store.generateFromPlan(isoList, { replace: true });
+  const n = store.generateFromPlan(jours, { replace: true });
   haptic(15);
-  toast(`Liste générée · ${n} ingrédient${n > 1 ? 's' : ''}`, { action: 'Annuler', onAction: () => store.undo() });
+  toast(`Liste générée · ${repas} repas, ${n} ingrédient${n > 1 ? 's' : ''}`,
+    { action: 'Annuler', onAction: () => store.undo() });
 }
 
 /* ------------------------------------------------------------ édition item */
@@ -248,16 +273,33 @@ function openListMenu() {
     title: 'Liste de courses',
     leftLabel: 'Fermer',
     render: (api) => {
+      const compte = (scope) => store.countPlanned(scopeDays(scope));
+      const passes = store.plannedDays({ to: store.todayIso() })
+        .filter((d) => d < store.todayIso()).length;
+
       api.body.innerHTML = `
-        <button type="button" class="btn btn-block btn-primary" data-gen>${icon('sparkles')} Regénérer depuis la semaine</button>
+        <div class="section-title" style="margin-top:0">Générer depuis le planning</div>
+        <button type="button" class="btn btn-block btn-primary" data-gen="future">
+          ${icon('sparkles')} Tout le planning à venir · ${compte('future')} repas
+        </button>
+        <button type="button" class="btn btn-block" style="margin-top:10px" data-gen="week">
+          ${icon('calendar')} La semaine affichée · ${compte('week')} repas
+        </button>
+        ${passes ? `<button type="button" class="btn btn-block" style="margin-top:10px" data-gen="all">
+          ${icon('list')} Tout, jours passés compris · ${compte('all')} repas
+        </button>` : ''}
+        <div class="section-title">Autres actions</div>
         <button type="button" class="btn btn-block" style="margin-top:10px" data-recipe>${icon('book')} Ajouter une recette</button>
         <button type="button" class="btn btn-block" style="margin-top:10px" data-share>${icon('share')} Partager la liste</button>
         <button type="button" class="btn btn-block" style="margin-top:10px" data-uncheck>${icon('refresh')} Tout décocher</button>
         <button type="button" class="btn btn-block btn-danger" style="margin-top:10px" data-clear>${icon('trash')} Vider la liste</button>
         <p class="muted" style="font-size:13px;line-height:1.5;margin-top:18px">
-          La régénération remplace les articles issus des recettes et conserve ceux que tu as ajoutés à la main.</p>`;
+          La régénération remplace les articles issus des recettes et conserve ceux que tu as
+          ajoutés à la main. Par défaut elle couvre <b>${SCOPE_LABEL.future}</b>, pour qu'une
+          semaine à cheval ne coupe pas les courses en deux.</p>`;
 
-      api.body.querySelector('[data-gen]').addEventListener('click', () => { api.close(); generateFromWeek(); });
+      api.body.querySelectorAll('[data-gen]').forEach((b) =>
+        b.addEventListener('click', () => { api.close(); generateFromPlanning(b.dataset.gen); }));
       api.body.querySelector('[data-recipe]').addEventListener('click', () => {
         api.close();
         setTimeout(() => openRecipePicker((recipe) => {

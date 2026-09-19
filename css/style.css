@@ -998,6 +998,18 @@ input, textarea, select { -webkit-appearance: none; appearance: none; }
   background: color-mix(in srgb, var(--red) 15%, transparent);
   color: var(--red);
 }
+.note.stale-note {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--text);
+  margin-bottom: 14px;
+}
+.note.stale-note .btn { align-self: stretch; }
+
 .note.diet-note {
   background: color-mix(in srgb, var(--red) 10%, transparent);
   color: var(--text);

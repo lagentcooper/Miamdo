@@ -2,7 +2,7 @@
    fonctionner hors connexion. Les données (recettes, planning, liste) vivent
    dans localStorage et ne transitent jamais par le réseau. */
 
-const VERSION = 'miamdo-v1.6.1';
+const VERSION = 'miamdo-v1.6.2';
 const ASSETS = [
   './',
   './index.html',

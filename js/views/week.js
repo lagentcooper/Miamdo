@@ -25,6 +25,11 @@ export function render({ topbar, view }) {
   const withPrices = store.getState().settings.showPrices !== false;
   const budget = withPrices ? planCost(isoList, store.getRecipe) : null;
   const withNutrition = store.getState().settings.showNutrition !== false;
+  // la liste couvre tout le planning à venir, pas seulement la semaine affichée :
+  // une semaine à cheval ne doit pas obliger à générer deux fois.
+  const aVenir = store.plannedDays({ from: store.todayIso() });
+  const couverts = aVenir.length ? aVenir : isoList;
+  const repasCouverts = store.countPlanned(couverts);
 
   topbar.innerHTML = `
     <div class="topbar-row">
@@ -78,9 +83,9 @@ export function render({ topbar, view }) {
     ${planned ? `
       <div class="hero">
         <h2>${planned} repas cette semaine</h2>
-        <p>${budget && budget.total
-          ? `Budget estimé <b>≈ ${formatEuro(budget.total)}</b> — génère la liste, les ingrédients sont additionnés et rangés par rayon.`
-          : 'Génère ta liste de courses : les ingrédients sont additionnés et rangés par rayon.'}</p>
+        <p>${budget && budget.total ? `Budget de la semaine <b>≈ ${formatEuro(budget.total)}</b>. ` : ''}La liste
+          couvre <b>tout ton planning à venir</b> — ${repasCouverts} repas — ingrédients additionnés
+          et rangés par rayon.</p>
         <button type="button" class="btn" data-generate>${icon('sparkles')} Générer la liste</button>
       </div>` : `
       <div class="hero">
@@ -112,9 +117,9 @@ export function render({ topbar, view }) {
   });
   delegate(view, '[data-meal]', 'click', (e, el) => openMealActions(el.dataset.day, el.dataset.meal));
   delegate(view, '[data-generate]', 'click', () => {
-    const n = store.generateFromPlan(isoList, { replace: true });
+    const n = store.generateFromPlan(couverts, { replace: true });
     haptic(15);
-    toast(`Liste générée · ${n} ingrédient${n > 1 ? 's' : ''}`, {
+    toast(`Liste générée · ${repasCouverts} repas, ${n} ingrédient${n > 1 ? 's' : ''}`, {
       action: 'Annuler', onAction: () => store.undo(),
     });
     window.dispatchEvent(new CustomEvent('miamdo:navigate', { detail: 'shopping' }));

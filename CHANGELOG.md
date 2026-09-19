@@ -4,6 +4,21 @@ Le numéro affiché dans **Réglages** (et dans la colonne latérale sur grand �
 correspond à celui de `js/version.js`. Le cache hors ligne (`sw.js`) porte le même
 numéro : le changer suffit à faire récupérer la nouvelle version à l'app installée.
 
+## 1.6.2 — la liste couvre tout le planning
+
+- La liste de courses se génère sur **tout le planning à venir**, et non plus sur la seule
+  semaine affichée : une semaine à cheval n'oblige plus à générer deux fois, et des repas
+  planifiés plus loin ne sont plus oubliés
+- Le menu de la liste propose les trois périmètres, avec le nombre de repas de chacun :
+  tout le planning à venir · la semaine affichée · tout, jours passés compris
+- **Bandeau « ton planning a changé »** sur la liste quand des repas ont été ajoutés ou
+  retirés depuis la dernière génération, avec un bouton pour régénérer
+- Le bandeau du planning annonce le périmètre couvert et le nombre de repas
+
+Les quantités, elles, étaient bien additionnées : trois croque-monsieur donnent bien
+douze tranches de pain. Le manque venait du périmètre — seuls les repas de la semaine
+affichée étaient comptés.
+
 ## 1.6.1 — le planning s'ouvre sur aujourd'hui
 
 - Le planning se positionne sur le **jour courant** à l'ouverture de l'onglet ; les jours

@@ -61,6 +61,7 @@ function initialState() {
     list: [],
     prices: {},
     pantry: [],
+    planUpdatedAt: 0,
     settings: { ...DEFAULT_SETTINGS, seeded: true },
   };
 }
@@ -80,6 +81,7 @@ function load() {
       list: parsed.list || [],
       prices: parsed.prices || {},
       pantry: parsed.pantry || [],
+      planUpdatedAt: parsed.planUpdatedAt || 0,
       settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) },
     };
   } catch (err) {
@@ -220,6 +222,7 @@ export function planAdd(dayIso, recipeId, { servings, slot = 'diner' } = {}) {
   commit((s) => {
     if (!s.plan[dayIso]) s.plan[dayIso] = [];
     s.plan[dayIso].push(entry);
+    s.planUpdatedAt = Date.now();
   }, { undoLabel: 'Repas planifié' });
   return entry;
 }
@@ -229,6 +232,7 @@ export function planRemove(dayIso, entryId) {
     if (!s.plan[dayIso]) return;
     s.plan[dayIso] = s.plan[dayIso].filter((e) => e.id !== entryId);
     if (!s.plan[dayIso].length) delete s.plan[dayIso];
+    s.planUpdatedAt = Date.now();
   }, { undoLabel: 'Repas retiré' });
 }
 
@@ -236,6 +240,7 @@ export function planUpdate(dayIso, entryId, patch) {
   commit((s) => {
     const entry = (s.plan[dayIso] || []).find((e) => e.id === entryId);
     if (entry) Object.assign(entry, patch);
+    s.planUpdatedAt = Date.now();
   });
 }
 
@@ -247,12 +252,14 @@ export function planMove(fromIso, entryId, toIso) {
     if (!s.plan[fromIso].length) delete s.plan[fromIso];
     if (!s.plan[toIso]) s.plan[toIso] = [];
     s.plan[toIso].push(entry);
+    s.planUpdatedAt = Date.now();
   });
 }
 
 export function planClearWeek(dayIsoList) {
   commit((s) => {
     dayIsoList.forEach((d) => delete s.plan[d]);
+    s.planUpdatedAt = Date.now();
   }, { undoLabel: 'Semaine vidée' });
 }
 
@@ -524,5 +531,24 @@ export function resetAll() {
 /** Compte les repas planifiés sur une plage de jours. */
 export const countPlanned = (dayIsoList) =>
   dayIsoList.reduce((n, d) => n + (state.plan[d]?.length || 0), 0);
+
+/**
+ * Jours du planning portant au moins un repas, du plus ancien au plus récent.
+ * Sans borne, renvoie tout le planning — c'est ce qui sert à générer la liste,
+ * pour qu'une semaine à cheval ne coupe pas les courses en deux.
+ */
+export function plannedDays({ from = null, to = null } = {}) {
+  return Object.keys(state.plan)
+    .filter((day) => (state.plan[day] || []).length)
+    .filter((day) => (!from || day >= from) && (!to || day <= to))
+    .sort();
+}
+
+/** La liste a-t-elle pris du retard sur le planning ? */
+export function listOutdated() {
+  const genere = state.settings.lastGeneratedAt || 0;
+  if (!genere) return false;
+  return (state.planUpdatedAt || 0) > genere;
+}
 
 export const todayIso = () => isoDate(new Date());
