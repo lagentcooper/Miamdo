@@ -4,6 +4,27 @@ Le numéro affiché dans **Réglages** (et dans la colonne latérale sur grand �
 correspond à celui de `js/version.js`. Le cache hors ligne (`sw.js`) porte le même
 numéro : le changer suffit à faire récupérer la nouvelle version à l'app installée.
 
+## 1.7.1 — la barre d'onglets revient dans l'écran
+
+La correction de la 1.6.3 allait dans le mauvais sens. Mesuré sur la capture : la barre
+était poussée **51 pt sous le bas de l'écran** — les libellés et la moitié basse des icônes
+hors champ, le reste sous l'indicateur d'accueil. D'où des onglets difficiles à toucher.
+
+- `--vp-fix` retiré, du CSS comme du JS. La correction mesurée à l'exécution partait de
+  l'idée que `bottom: 0` s'ancrait trop haut ; c'est l'autre moitié du correctif 1.6.3
+  (fond sur `<html>`, `min-height`, hauteurs en `dvh`) qui réglait déjà le problème, et le
+  décalage ne faisait plus que sortir la barre de l'écran
+- Les cinq onglets retrouvent leur libellé, à 40 pt du bas — au-dessus de l'indicateur
+
+Et tant qu'on parle d'atteindre les boutons :
+
+- Le **« + » passe en bouton flottant** en bas à droite sur téléphone, juste au-dessus des
+  onglets : il était en haut à droite, à 737 pt du bas sur un iPhone de 852 pt, donc hors
+  de portée du pouce. Sur grand écran, où la colonne latérale remplace les onglets, il
+  reste dans l'en-tête
+- Les **boutons ronds de l'en-tête passent de 38 à 44 pt**, le minimum confortable au doigt
+- La liste garde de la place sous la dernière carte : le bouton flottant ne la masque pas
+
 ## 1.7.0 — batch cooking
 
 Cuisiner une fois, manger plusieurs jours. Quand on ajoute une recette pour plus de
