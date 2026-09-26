@@ -110,7 +110,7 @@ function recipeCard(recipe) {
     </button>`;
 }
 
-export function render({ topbar, view }) {
+export function render({ topbar, view, fab }) {
   const state = store.getState();
   const list = applyDietFilter(state.recipes.filter((r) => matches(r, state)));
 
@@ -160,6 +160,12 @@ export function render({ topbar, view }) {
     haptic();
     rerender();
   });
+  if (fab) {
+    fab.innerHTML = `
+      <button type="button" class="fab" data-new aria-label="Nouvelle recette">${icon('plus')}</button>`;
+    delegate(fab, '[data-new]', 'click', () => openAddMenu());
+  }
+
   delegate(topbar, '[data-new]', 'click', () => openAddMenu());
   delegate(view, '[data-new]', 'click', () => openAddMenu());
   delegate(view, '[data-fav]', 'click', (e, el) => {
