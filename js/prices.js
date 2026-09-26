@@ -131,6 +131,7 @@ export function planCost(dayIsoList, getRecipe) {
   let incomplete = false;
   for (const day of dayIsoList) {
     for (const entry of getState().plan[day] || []) {
+      if (entry.leftoverOf) continue; // déjà payé le jour de la cuisson
       const recipe = getRecipe(entry.recipeId);
       if (!recipe) continue;
       const { total: cost, complete } = recipeCost(recipe, entry.servings);

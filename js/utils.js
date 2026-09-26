@@ -359,6 +359,9 @@ export function weekLabel(monday) {
 
 export const isToday = (d) => isoDate(d) === isoDate(new Date());
 
+/** Jour déjà écoulé (hier ou avant). */
+export const isPast = (d) => isoDate(d) < isoDate(new Date());
+
 /** « 1 h 15 » à partir de minutes. */
 export function formatTime(min) {
   if (!min) return '';

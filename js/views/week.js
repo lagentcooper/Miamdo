@@ -3,15 +3,24 @@
 import * as store from '../store.js';
 import { icon, openSheet, confirmSheet, toast, haptic, delegate } from '../ui.js';
 import {
-  escapeHtml, dayName, isoDate, weekDates, weekLabel, isToday, addDays, formatTime,
+  escapeHtml, dayName, isoDate, weekDates, weekLabel, isToday, isPast, addDays, formatTime,
 } from '../utils.js';
 import { weekState, currentWeekStart } from '../weekstate.js';
 import { activeSlots, slotLabel, defaultSlot } from '../slots.js';
-import { openRecipePicker } from './pickers.js';
+import {
+  openRecipePicker, defaultBatch, batchSection, bindBatchSection, commitPlan,
+} from './pickers.js';
 import { openRecipeDetail } from './recipes.js';
 import { planCost, recipeCost, formatEuro } from '../prices.js';
 import { checkRecipe, dietActive, problemSummary } from '../diet.js';
 import { dayNutrition, formatKcal } from '../nutrition.js';
+
+/** « le 26 » / « aujourd'hui » pour situer la cuisson d'un reste. */
+function dayLabel(iso) {
+  const d = new Date(`${iso}T12:00:00`);
+  if (isoDate(d) === isoDate(new Date())) return 'aujourd’hui';
+  return `le ${d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}`;
+}
 
 export function render({ topbar, view }) {
   // l'ancre est recalée sur le premier jour réglé : changer lundi ↔ dimanche
@@ -25,6 +34,11 @@ export function render({ topbar, view }) {
   const withPrices = store.getState().settings.showPrices !== false;
   const budget = withPrices ? planCost(isoList, store.getRecipe) : null;
   const withNutrition = store.getState().settings.showNutrition !== false;
+  // la liste couvre tout le planning à venir, pas seulement la semaine affichée :
+  // une semaine à cheval ne doit pas obliger à générer deux fois.
+  const aVenir = store.plannedDays({ from: store.todayIso() });
+  const couverts = aVenir.length ? aVenir : isoList;
+  const repasCouverts = store.countPlanned(couverts);
 
   topbar.innerHTML = `
     <div class="topbar-row">
@@ -41,7 +55,7 @@ export function render({ topbar, view }) {
     const iso = isoDate(date);
     const meals = store.getState().plan[iso] || [];
     return `
-      <section class="day ${isToday(date) ? 'today' : ''}">
+      <section class="day ${isToday(date) ? 'today' : ''}${isPast(date) ? ' past' : ''}">
         <header class="day-head">
           <div>
             <div class="dname">${dayName(date)}</div>
@@ -51,7 +65,7 @@ export function render({ topbar, view }) {
           ${(() => {
             if (!withNutrition || !meals.length) return '';
             const n = dayNutrition(meals, store.getRecipe);
-            return n && n.kcal ? `<span class="kcal">${formatKcal(n.kcal)} / pers</span>` : '';
+            return n && n.kcal ? `<span class="kcal">${formatKcal(n.kcal)}/pers</span>` : '';
           })()}
           <button type="button" class="icon-btn plain add" data-add-day="${iso}" aria-label="Ajouter un repas">${icon('plus')}</button>
         </header>
@@ -59,13 +73,22 @@ export function render({ topbar, view }) {
           ? meals.map((m) => {
               const r = store.getRecipe(m.recipeId);
               if (!r) return '';
+              const restes = m.leftoverOf ? null : store.leftoversOf(m.id);
+              const cuisson = m.leftoverOf ? store.findPlanEntry(m.leftoverOf) : null;
               return `
-                <div class="meal" data-meal="${m.id}" data-day="${iso}">
+                <div class="meal ${m.leftoverOf ? 'leftover' : ''}" data-meal="${m.id}" data-day="${iso}">
                   <span class="emoji">${r.emoji}</span>
                   <span class="grow">
-                    <div class="mname">${escapeHtml(r.name)}</div>
-                    <div class="mmeta">${m.servings} portions${r.time ? ` · ${formatTime(r.time)}` : ''}${
-                      withPrices ? ` · <span class="price muted-price">≈ ${formatEuro(recipeCost(r, m.servings).total)}</span>` : ''}</div>
+                    <div class="mname">${escapeHtml(r.name)}${
+                      m.leftoverOf ? ' <span class="tag" style="--tag-color:var(--muted)">restes</span>' : ''}${
+                      restes && restes.length ? ' <span class="tag" style="--tag-color:var(--accent)">batch</span>' : ''}</div>
+                    <div class="mmeta">${m.servings} portion${m.servings > 1 ? 's' : ''}${
+                      m.leftoverOf
+                        ? ` · cuisiné ${cuisson ? dayLabel(cuisson.day) : 'plus tôt'}`
+                        : `${r.time ? ` · ${formatTime(r.time)}` : ''}${
+                          restes && restes.length ? ` · pour ${restes.length + 1} repas` : ''}${
+                          withPrices ? ` · <span class="price muted-price">≈ ${formatEuro(recipeCost(r, m.servings).total)}</span>` : ''}`
+                    }</div>
                   </span>
                   <span class="slot">${slotLabel(m.slot)}</span>
                 </div>`;
@@ -78,9 +101,9 @@ export function render({ topbar, view }) {
     ${planned ? `
       <div class="hero">
         <h2>${planned} repas cette semaine</h2>
-        <p>${budget && budget.total
-          ? `Budget estimé <b>≈ ${formatEuro(budget.total)}</b> — génère la liste, les ingrédients sont additionnés et rangés par rayon.`
-          : 'Génère ta liste de courses : les ingrédients sont additionnés et rangés par rayon.'}</p>
+        <p>${budget && budget.total ? `Budget de la semaine <b>≈ ${formatEuro(budget.total)}</b>. ` : ''}La liste
+          couvre <b>tout ton planning à venir</b> — ${repasCouverts} repas — ingrédients additionnés
+          et rangés par rayon.</p>
         <button type="button" class="btn" data-generate>${icon('sparkles')} Générer la liste</button>
       </div>` : `
       <div class="hero">
@@ -89,7 +112,8 @@ export function render({ topbar, view }) {
         <button type="button" class="btn" data-add-day="${isoList[0]}">${icon('plus')} Planifier un repas</button>
       </div>`}
     <div class="day-grid" style="margin-top:16px">${days.map(dayCard).join('')}</div>
-    ${planned ? `<button type="button" class="btn btn-block btn-danger" style="margin-top:6px" data-clear-week>${icon('trash')} Vider la semaine</button>` : ''}`;
+    ${planned ? `<button type="button" class="btn btn-block btn-danger" style="margin-top:6px" data-clear-week>${icon('trash')} Vider la semaine</button>` : ''}
+    <div data-spacer aria-hidden="true"></div>`;
 
   /* interactions */
   delegate(topbar, '[data-week]', 'click', (e, el) => {
@@ -99,6 +123,7 @@ export function render({ topbar, view }) {
   });
   delegate(topbar, '[data-today]', 'click', () => {
     weekState.monday = currentWeekStart();
+    scrollToToday = true;
     rerender();
   });
   delegate(view, '[data-add-day]', 'click', (e, el) => {
@@ -110,13 +135,19 @@ export function render({ topbar, view }) {
   });
   delegate(view, '[data-meal]', 'click', (e, el) => openMealActions(el.dataset.day, el.dataset.meal));
   delegate(view, '[data-generate]', 'click', () => {
-    const n = store.generateFromPlan(isoList, { replace: true });
+    const n = store.generateFromPlan(couverts, { replace: true });
     haptic(15);
-    toast(`Liste générée · ${n} ingrédient${n > 1 ? 's' : ''}`, {
+    toast(`Liste générée · ${repasCouverts} repas, ${n} ingrédient${n > 1 ? 's' : ''}`, {
       action: 'Annuler', onAction: () => store.undo(),
     });
     window.dispatchEvent(new CustomEvent('miamdo:navigate', { detail: 'shopping' }));
   });
+  // après le rendu, on se place sur aujourd'hui si c'est demandé
+  if (scrollToToday) {
+    scrollToToday = false;
+    revealToday(view);
+  }
+
   delegate(view, '[data-clear-week]', 'click', async () => {
     const ok = await confirmSheet({
       title: 'Vider la semaine ?',
@@ -132,24 +163,69 @@ export function render({ topbar, view }) {
 let rerender = () => {};
 export function setRerender(fn) { rerender = fn; }
 
+// Le planning s'ouvre sur le jour courant ; les jours déjà passés restent
+// au-dessus, il suffit de remonter pour les revoir.
+let scrollToToday = true;
+export function onEnter() { scrollToToday = true; }
+
+/**
+ * Amène la carte du jour juste sous l'en-tête.
+ * En deux passes : la première positionne, la seconde rattrape le décalage
+ * laissé par la mise en page qui finit de se stabiliser (hauteur du bandeau,
+ * retours à la ligne).
+ */
+function revealToday(container) {
+  // position dans le document, insensible aux transformations : l'animation
+  // d'entrée translate la vue, ce qui fausserait getBoundingClientRect().
+  const docTop = (el) => {
+    let y = 0;
+    for (let node = el; node; node = node.offsetParent) y += node.offsetTop;
+    return y;
+  };
+
+  const place = () => {
+    const card = container.querySelector('.day.today');
+    if (!card) return;
+    const marge = (document.getElementById('topbar')?.offsetHeight || 0) + 8;
+    const cible = docTop(card) - marge;
+
+    // en fin de semaine il n'y a plus assez de contenu en dessous pour que le
+    // jour courant atteigne le haut : on ajoute exactement ce qui manque.
+    const spacer = container.querySelector('[data-spacer]');
+    if (spacer) {
+      // calcul hors spacer, sinon la seconde passe le remettrait à zéro ;
+      // quelques pixels de marge car l'animation d'entrée gonfle brièvement
+      // la hauteur défilable du document.
+      const sansSpacer = document.documentElement.scrollHeight - spacer.offsetHeight;
+      const manque = cible + window.innerHeight - sansSpacer;
+      spacer.style.height = `${Math.max(0, Math.ceil(manque) + 16)}px`;
+    }
+
+    window.scrollTo({ top: Math.max(0, cible), behavior: 'auto' });
+  };
+  requestAnimationFrame(() => {
+    place();
+    requestAnimationFrame(place);
+  });
+}
+
 /* ------------------------------------------------ choix midi/dîner + portions */
 
 function openSlotSheet(dayIso, recipe) {
   let slot = defaultSlot();
   let portions = recipe.servings;
+  let batch = defaultBatch(portions);
   openSheet({
     title: 'Ajouter au planning',
     leftLabel: 'Annuler',
     rightLabel: 'Ajouter',
     onRight: (api) => {
-      store.planAdd(dayIso, recipe.id, { servings: portions, slot });
+      const resume = commitPlan(dayIso, recipe, { total: portions, slot, batch });
       haptic(12);
       api.close();
       const { ok, problems } = dietActive() ? checkRecipe(recipe) : { ok: true };
-      toast(ok
-        ? `${recipe.name} ajouté`
-        : `${recipe.name} ajouté — ⚠︎ ${problemSummary(problems)}`,
-      { action: 'Annuler', onAction: () => store.undo() });
+      toast(ok ? resume : `${resume} — ⚠︎ ${problemSummary(problems)}`,
+        { action: 'Annuler', onAction: () => store.undo() });
     },
     render: (api) => {
       const draw = () => {
@@ -164,16 +240,24 @@ function openSlotSheet(dayIso, recipe) {
           <div class="segmented" style="margin-bottom:16px">
             ${activeSlots().map((s) => `<button type="button" class="${slot === s.id ? 'active' : ''}" data-slot="${s.id}">${s.label}</button>`).join('')}
           </div>
-          <div class="hstack">
-            <div class="grow"><b>Portions</b><div class="muted" style="font-size:13px">Ajuste selon le nombre de convives</div></div>
+          <div class="hstack" style="margin-bottom:14px">
+            <div class="grow"><b>Portions</b><div class="muted" style="font-size:13px">Ce que tu cuisines en tout</div></div>
             <div class="stepper">
               <button type="button" data-p="-1">−</button><span class="val">${portions}</span><button type="button" data-p="1">+</button>
             </div>
-          </div>`;
+          </div>
+
+          ${batchSection(batch, portions, dayIso)}`;
         api.body.querySelectorAll('[data-slot]').forEach((b) =>
           b.addEventListener('click', () => { slot = b.dataset.slot; haptic(); draw(); }));
         api.body.querySelectorAll('[data-p]').forEach((b) =>
-          b.addEventListener('click', () => { portions = Math.max(1, portions + Number(b.dataset.p)); haptic(); draw(); }));
+          b.addEventListener('click', () => {
+            portions = Math.max(1, portions + Number(b.dataset.p));
+            batch.parRepas = Math.min(batch.parRepas, portions);
+            haptic();
+            draw();
+          }));
+        bindBatchSection(api.body, batch, portions, draw);
       };
       draw();
     },
@@ -192,7 +276,16 @@ function openMealActions(dayIso, entryId) {
     leftLabel: 'Fermer',
     render: (api) => {
       const draw = () => {
+        const restes = entry.leftoverOf ? [] : store.leftoversOf(entry.id);
+        const cuisson = entry.leftoverOf ? store.findPlanEntry(entry.leftoverOf) : null;
         api.body.innerHTML = `
+          ${entry.leftoverOf ? `<div class="note" style="margin-bottom:14px">
+            Ce repas est un <b>reste</b> de la cuisson ${cuisson ? dayLabel(cuisson.day) : ''} :
+            les ingrédients ont déjà été achetés, il ne compte pas une seconde fois dans
+            les courses ni dans le budget.</div>` : ''}
+          ${restes.length ? `<div class="note" style="margin-bottom:14px">
+            Cuisiné pour <b>${restes.length + 1} repas</b> : retirer cette cuisson retirera
+            aussi ses ${restes.length} reste${restes.length > 1 ? 's' : ''}.</div>` : ''}
           <div class="hstack" style="margin-bottom:16px">
             <div class="grow"><b>Portions</b></div>
             <div class="stepper">
@@ -212,7 +305,7 @@ function openMealActions(dayIso, entryId) {
             </select>
           </div>
           <button type="button" class="btn btn-block" data-open>${icon('book')} Voir la recette</button>
-          <button type="button" class="btn btn-block" style="margin-top:10px" data-add-list>${icon('cart')} Ajouter aux courses</button>
+          ${entry.leftoverOf ? '' : `<button type="button" class="btn btn-block" style="margin-top:10px" data-add-list>${icon('cart')} Ajouter aux courses</button>`}
           <button type="button" class="btn btn-block btn-danger" style="margin-top:10px" data-remove>${icon('trash')} Retirer du planning</button>`;
 
         api.body.querySelectorAll('[data-p]').forEach((b) =>
@@ -238,7 +331,7 @@ function openMealActions(dayIso, entryId) {
           api.close();
           setTimeout(() => openRecipeDetail(recipe.id), 320);
         });
-        api.body.querySelector('[data-add-list]').addEventListener('click', () => {
+        api.body.querySelector('[data-add-list]')?.addEventListener('click', () => {
           const n = store.addRecipeToList(recipe.id, entry.servings);
           api.close();
           toast(`${n} ingrédients ajoutés`, { action: 'Annuler', onAction: () => store.undo() });

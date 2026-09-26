@@ -61,6 +61,7 @@ function initialState() {
     list: [],
     prices: {},
     pantry: [],
+    planUpdatedAt: 0,
     settings: { ...DEFAULT_SETTINGS, seeded: true },
   };
 }
@@ -80,6 +81,7 @@ function load() {
       list: parsed.list || [],
       prices: parsed.prices || {},
       pantry: parsed.pantry || [],
+      planUpdatedAt: parsed.planUpdatedAt || 0,
       settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) },
     };
   } catch (err) {
@@ -209,19 +211,70 @@ export function duplicateRecipe(id) {
 
 /* ---------------------------------------------------------------- planning */
 
-export function planAdd(dayIso, recipeId, { servings, slot = 'diner' } = {}) {
+export function planAdd(dayIso, recipeId, { servings, slot = 'diner', leftoverOf = null } = {}) {
   const recipe = getRecipe(recipeId);
   const entry = {
     id: uid('plan'),
     recipeId,
     slot,
     servings: Math.max(1, Number(servings) || recipe?.servings || state.settings.defaultServings),
+    ...(leftoverOf ? { leftoverOf } : {}),
   };
   commit((s) => {
     if (!s.plan[dayIso]) s.plan[dayIso] = [];
     s.plan[dayIso].push(entry);
+    s.planUpdatedAt = Date.now();
   }, { undoLabel: 'Repas planifié' });
   return entry;
+}
+
+/**
+ * Batch cooking : on cuisine une fois pour plusieurs repas.
+ * Le jour J porte la cuisson (toutes les portions, donc toutes les courses) ;
+ * les jours suivants portent des **restes**, qui se mangent mais ne se
+ * rachètent pas. `portionsParRepas` dit combien on en mange à chaque fois.
+ */
+export function planAddBatch(dayIso, recipeId, {
+  servings, portionsParRepas = 1, slot = 'diner',
+} = {}) {
+  const total = Math.max(1, Number(servings) || 1);
+  const parRepas = Math.max(1, Math.min(total, Number(portionsParRepas) || 1));
+  const repas = Math.ceil(total / parRepas);
+
+  const cuisson = planAdd(dayIso, recipeId, { servings: total, slot });
+  const jours = [dayIso];
+
+  let restantes = total - parRepas;
+  let jour = dayIso;
+  while (restantes > 0) {
+    jour = isoDate(new Date(`${jour}T12:00:00`).getTime() + 86400000);
+    const portions = Math.min(parRepas, restantes);
+    planAdd(jour, recipeId, { servings: portions, slot, leftoverOf: cuisson.id });
+    jours.push(jour);
+    restantes -= portions;
+  }
+
+  return { cuisson, repas, jours, parRepas };
+}
+
+/** Retrouve une entrée de planning par son identifiant. */
+export function findPlanEntry(entryId) {
+  for (const [day, entries] of Object.entries(state.plan)) {
+    const entry = entries.find((e) => e.id === entryId);
+    if (entry) return { day, entry };
+  }
+  return null;
+}
+
+/** Entrées « restes » rattachées à une cuisson. */
+export function leftoversOf(entryId) {
+  const trouves = [];
+  for (const [day, entries] of Object.entries(state.plan)) {
+    for (const entry of entries) {
+      if (entry.leftoverOf === entryId) trouves.push({ day, entry });
+    }
+  }
+  return trouves;
 }
 
 export function planRemove(dayIso, entryId) {
@@ -229,6 +282,12 @@ export function planRemove(dayIso, entryId) {
     if (!s.plan[dayIso]) return;
     s.plan[dayIso] = s.plan[dayIso].filter((e) => e.id !== entryId);
     if (!s.plan[dayIso].length) delete s.plan[dayIso];
+    // retirer la cuisson emporte ses restes : ils n'ont plus de repas d'origine
+    for (const day of Object.keys(s.plan)) {
+      s.plan[day] = s.plan[day].filter((e) => e.leftoverOf !== entryId);
+      if (!s.plan[day].length) delete s.plan[day];
+    }
+    s.planUpdatedAt = Date.now();
   }, { undoLabel: 'Repas retiré' });
 }
 
@@ -236,6 +295,7 @@ export function planUpdate(dayIso, entryId, patch) {
   commit((s) => {
     const entry = (s.plan[dayIso] || []).find((e) => e.id === entryId);
     if (entry) Object.assign(entry, patch);
+    s.planUpdatedAt = Date.now();
   });
 }
 
@@ -247,12 +307,14 @@ export function planMove(fromIso, entryId, toIso) {
     if (!s.plan[fromIso].length) delete s.plan[fromIso];
     if (!s.plan[toIso]) s.plan[toIso] = [];
     s.plan[toIso].push(entry);
+    s.planUpdatedAt = Date.now();
   });
 }
 
 export function planClearWeek(dayIsoList) {
   commit((s) => {
     dayIsoList.forEach((d) => delete s.plan[d]);
+    s.planUpdatedAt = Date.now();
   }, { undoLabel: 'Semaine vidée' });
 }
 
@@ -370,6 +432,8 @@ export function generateFromPlan(dayIsoList, { replace = true } = {}) {
   const additions = [];
   for (const day of dayIsoList) {
     for (const entry of state.plan[day] || []) {
+      // un reste se mange mais ne se rachète pas : tout a été compté à la cuisson
+      if (entry.leftoverOf) continue;
       const recipe = getRecipe(entry.recipeId);
       if (recipe) additions.push(...scaledIngredients(recipe, entry.servings));
     }
@@ -524,5 +588,24 @@ export function resetAll() {
 /** Compte les repas planifiés sur une plage de jours. */
 export const countPlanned = (dayIsoList) =>
   dayIsoList.reduce((n, d) => n + (state.plan[d]?.length || 0), 0);
+
+/**
+ * Jours du planning portant au moins un repas, du plus ancien au plus récent.
+ * Sans borne, renvoie tout le planning — c'est ce qui sert à générer la liste,
+ * pour qu'une semaine à cheval ne coupe pas les courses en deux.
+ */
+export function plannedDays({ from = null, to = null } = {}) {
+  return Object.keys(state.plan)
+    .filter((day) => (state.plan[day] || []).length)
+    .filter((day) => (!from || day >= from) && (!to || day <= to))
+    .sort();
+}
+
+/** La liste a-t-elle pris du retard sur le planning ? */
+export function listOutdated() {
+  const genere = state.settings.lastGeneratedAt || 0;
+  if (!genere) return false;
+  return (state.planUpdatedAt || 0) > genere;
+}
 
 export const todayIso = () => isoDate(new Date());

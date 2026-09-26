@@ -79,9 +79,15 @@ que l'ordinateur soit allumé. Pratique pour essayer, pas pour tous les jours.
 **Semaine**
 - Planning lundi → dimanche, midi et dîner, avec le nombre de convives par repas
 - Navigation de semaine en semaine, déplacement d'un repas d'un jour à l'autre
+- **Batch cooking** : cuisine la quiche pour 6 une seule fois, l'app étale les portions sur
+  les jours suivants. Le jour de cuisson porte les courses, les autres sont des *restes* —
+  ni rachetés, ni recomptés dans le budget, mais bien comptés côté nutrition
 
 **Courses**
-- Génération en un tap depuis le planning de la semaine
+- Génération en un tap depuis **tout le planning à venir** — pas seulement la semaine
+  affichée, pour qu'une semaine à cheval ne coupe pas les courses en deux. Le menu permet
+  de se limiter à la semaine affichée, ou d'inclure les jours passés
+- Un bandeau prévient quand le planning a changé depuis la dernière génération
 - **Agrégation intelligente** : 3 œufs + 3 œufs = 6 œufs, 500 g + 800 g = 1,3 kg
   (les unités compatibles sont converties, g/kg et ml/cl/L)
 - **Rangement automatique par rayon** (fruits & légumes, boucherie, crèmerie, épicerie…)
