@@ -642,6 +642,10 @@ input, textarea, select { -webkit-appearance: none; appearance: none; }
   padding: 2px 7px;
   border-radius: 6px;
 }
+/* un reste se lit comme un repas, mais sans le poids d'une vraie cuisson */
+.meal.leftover .mname { font-weight: 500; }
+.meal.leftover .emoji { opacity: .55; }
+
 .empty-day {
   padding: 12px 14px;
   border-top: 1px dashed var(--line);

@@ -211,13 +211,14 @@ export function duplicateRecipe(id) {
 
 /* ---------------------------------------------------------------- planning */
 
-export function planAdd(dayIso, recipeId, { servings, slot = 'diner' } = {}) {
+export function planAdd(dayIso, recipeId, { servings, slot = 'diner', leftoverOf = null } = {}) {
   const recipe = getRecipe(recipeId);
   const entry = {
     id: uid('plan'),
     recipeId,
     slot,
     servings: Math.max(1, Number(servings) || recipe?.servings || state.settings.defaultServings),
+    ...(leftoverOf ? { leftoverOf } : {}),
   };
   commit((s) => {
     if (!s.plan[dayIso]) s.plan[dayIso] = [];
@@ -227,11 +228,65 @@ export function planAdd(dayIso, recipeId, { servings, slot = 'diner' } = {}) {
   return entry;
 }
 
+/**
+ * Batch cooking : on cuisine une fois pour plusieurs repas.
+ * Le jour J porte la cuisson (toutes les portions, donc toutes les courses) ;
+ * les jours suivants portent des **restes**, qui se mangent mais ne se
+ * rachètent pas. `portionsParRepas` dit combien on en mange à chaque fois.
+ */
+export function planAddBatch(dayIso, recipeId, {
+  servings, portionsParRepas = 1, slot = 'diner',
+} = {}) {
+  const total = Math.max(1, Number(servings) || 1);
+  const parRepas = Math.max(1, Math.min(total, Number(portionsParRepas) || 1));
+  const repas = Math.ceil(total / parRepas);
+
+  const cuisson = planAdd(dayIso, recipeId, { servings: total, slot });
+  const jours = [dayIso];
+
+  let restantes = total - parRepas;
+  let jour = dayIso;
+  while (restantes > 0) {
+    jour = isoDate(new Date(`${jour}T12:00:00`).getTime() + 86400000);
+    const portions = Math.min(parRepas, restantes);
+    planAdd(jour, recipeId, { servings: portions, slot, leftoverOf: cuisson.id });
+    jours.push(jour);
+    restantes -= portions;
+  }
+
+  return { cuisson, repas, jours, parRepas };
+}
+
+/** Retrouve une entrée de planning par son identifiant. */
+export function findPlanEntry(entryId) {
+  for (const [day, entries] of Object.entries(state.plan)) {
+    const entry = entries.find((e) => e.id === entryId);
+    if (entry) return { day, entry };
+  }
+  return null;
+}
+
+/** Entrées « restes » rattachées à une cuisson. */
+export function leftoversOf(entryId) {
+  const trouves = [];
+  for (const [day, entries] of Object.entries(state.plan)) {
+    for (const entry of entries) {
+      if (entry.leftoverOf === entryId) trouves.push({ day, entry });
+    }
+  }
+  return trouves;
+}
+
 export function planRemove(dayIso, entryId) {
   commit((s) => {
     if (!s.plan[dayIso]) return;
     s.plan[dayIso] = s.plan[dayIso].filter((e) => e.id !== entryId);
     if (!s.plan[dayIso].length) delete s.plan[dayIso];
+    // retirer la cuisson emporte ses restes : ils n'ont plus de repas d'origine
+    for (const day of Object.keys(s.plan)) {
+      s.plan[day] = s.plan[day].filter((e) => e.leftoverOf !== entryId);
+      if (!s.plan[day].length) delete s.plan[day];
+    }
     s.planUpdatedAt = Date.now();
   }, { undoLabel: 'Repas retiré' });
 }
@@ -377,6 +432,8 @@ export function generateFromPlan(dayIsoList, { replace = true } = {}) {
   const additions = [];
   for (const day of dayIsoList) {
     for (const entry of state.plan[day] || []) {
+      // un reste se mange mais ne se rachète pas : tout a été compté à la cuisson
+      if (entry.leftoverOf) continue;
       const recipe = getRecipe(entry.recipeId);
       if (recipe) additions.push(...scaledIngredients(recipe, entry.servings));
     }

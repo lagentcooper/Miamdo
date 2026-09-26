@@ -7,11 +7,20 @@ import {
 } from '../utils.js';
 import { weekState, currentWeekStart } from '../weekstate.js';
 import { activeSlots, slotLabel, defaultSlot } from '../slots.js';
-import { openRecipePicker } from './pickers.js';
+import {
+  openRecipePicker, defaultBatch, batchSection, bindBatchSection, commitPlan,
+} from './pickers.js';
 import { openRecipeDetail } from './recipes.js';
 import { planCost, recipeCost, formatEuro } from '../prices.js';
 import { checkRecipe, dietActive, problemSummary } from '../diet.js';
 import { dayNutrition, formatKcal } from '../nutrition.js';
+
+/** « le 26 » / « aujourd'hui » pour situer la cuisson d'un reste. */
+function dayLabel(iso) {
+  const d = new Date(`${iso}T12:00:00`);
+  if (isoDate(d) === isoDate(new Date())) return 'aujourd’hui';
+  return `le ${d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}`;
+}
 
 export function render({ topbar, view }) {
   // l'ancre est recalée sur le premier jour réglé : changer lundi ↔ dimanche
@@ -64,13 +73,22 @@ export function render({ topbar, view }) {
           ? meals.map((m) => {
               const r = store.getRecipe(m.recipeId);
               if (!r) return '';
+              const restes = m.leftoverOf ? null : store.leftoversOf(m.id);
+              const cuisson = m.leftoverOf ? store.findPlanEntry(m.leftoverOf) : null;
               return `
-                <div class="meal" data-meal="${m.id}" data-day="${iso}">
+                <div class="meal ${m.leftoverOf ? 'leftover' : ''}" data-meal="${m.id}" data-day="${iso}">
                   <span class="emoji">${r.emoji}</span>
                   <span class="grow">
-                    <div class="mname">${escapeHtml(r.name)}</div>
-                    <div class="mmeta">${m.servings} portions${r.time ? ` · ${formatTime(r.time)}` : ''}${
-                      withPrices ? ` · <span class="price muted-price">≈ ${formatEuro(recipeCost(r, m.servings).total)}</span>` : ''}</div>
+                    <div class="mname">${escapeHtml(r.name)}${
+                      m.leftoverOf ? ' <span class="tag" style="--tag-color:var(--muted)">restes</span>' : ''}${
+                      restes && restes.length ? ' <span class="tag" style="--tag-color:var(--accent)">batch</span>' : ''}</div>
+                    <div class="mmeta">${m.servings} portion${m.servings > 1 ? 's' : ''}${
+                      m.leftoverOf
+                        ? ` · cuisiné ${cuisson ? dayLabel(cuisson.day) : 'plus tôt'}`
+                        : `${r.time ? ` · ${formatTime(r.time)}` : ''}${
+                          restes && restes.length ? ` · pour ${restes.length + 1} repas` : ''}${
+                          withPrices ? ` · <span class="price muted-price">≈ ${formatEuro(recipeCost(r, m.servings).total)}</span>` : ''}`
+                    }</div>
                   </span>
                   <span class="slot">${slotLabel(m.slot)}</span>
                 </div>`;
@@ -196,19 +214,18 @@ function revealToday(container) {
 function openSlotSheet(dayIso, recipe) {
   let slot = defaultSlot();
   let portions = recipe.servings;
+  let batch = defaultBatch(portions);
   openSheet({
     title: 'Ajouter au planning',
     leftLabel: 'Annuler',
     rightLabel: 'Ajouter',
     onRight: (api) => {
-      store.planAdd(dayIso, recipe.id, { servings: portions, slot });
+      const resume = commitPlan(dayIso, recipe, { total: portions, slot, batch });
       haptic(12);
       api.close();
       const { ok, problems } = dietActive() ? checkRecipe(recipe) : { ok: true };
-      toast(ok
-        ? `${recipe.name} ajouté`
-        : `${recipe.name} ajouté — ⚠︎ ${problemSummary(problems)}`,
-      { action: 'Annuler', onAction: () => store.undo() });
+      toast(ok ? resume : `${resume} — ⚠︎ ${problemSummary(problems)}`,
+        { action: 'Annuler', onAction: () => store.undo() });
     },
     render: (api) => {
       const draw = () => {
@@ -223,16 +240,24 @@ function openSlotSheet(dayIso, recipe) {
           <div class="segmented" style="margin-bottom:16px">
             ${activeSlots().map((s) => `<button type="button" class="${slot === s.id ? 'active' : ''}" data-slot="${s.id}">${s.label}</button>`).join('')}
           </div>
-          <div class="hstack">
-            <div class="grow"><b>Portions</b><div class="muted" style="font-size:13px">Ajuste selon le nombre de convives</div></div>
+          <div class="hstack" style="margin-bottom:14px">
+            <div class="grow"><b>Portions</b><div class="muted" style="font-size:13px">Ce que tu cuisines en tout</div></div>
             <div class="stepper">
               <button type="button" data-p="-1">−</button><span class="val">${portions}</span><button type="button" data-p="1">+</button>
             </div>
-          </div>`;
+          </div>
+
+          ${batchSection(batch, portions, dayIso)}`;
         api.body.querySelectorAll('[data-slot]').forEach((b) =>
           b.addEventListener('click', () => { slot = b.dataset.slot; haptic(); draw(); }));
         api.body.querySelectorAll('[data-p]').forEach((b) =>
-          b.addEventListener('click', () => { portions = Math.max(1, portions + Number(b.dataset.p)); haptic(); draw(); }));
+          b.addEventListener('click', () => {
+            portions = Math.max(1, portions + Number(b.dataset.p));
+            batch.parRepas = Math.min(batch.parRepas, portions);
+            haptic();
+            draw();
+          }));
+        bindBatchSection(api.body, batch, portions, draw);
       };
       draw();
     },
@@ -251,7 +276,16 @@ function openMealActions(dayIso, entryId) {
     leftLabel: 'Fermer',
     render: (api) => {
       const draw = () => {
+        const restes = entry.leftoverOf ? [] : store.leftoversOf(entry.id);
+        const cuisson = entry.leftoverOf ? store.findPlanEntry(entry.leftoverOf) : null;
         api.body.innerHTML = `
+          ${entry.leftoverOf ? `<div class="note" style="margin-bottom:14px">
+            Ce repas est un <b>reste</b> de la cuisson ${cuisson ? dayLabel(cuisson.day) : ''} :
+            les ingrédients ont déjà été achetés, il ne compte pas une seconde fois dans
+            les courses ni dans le budget.</div>` : ''}
+          ${restes.length ? `<div class="note" style="margin-bottom:14px">
+            Cuisiné pour <b>${restes.length + 1} repas</b> : retirer cette cuisson retirera
+            aussi ses ${restes.length} reste${restes.length > 1 ? 's' : ''}.</div>` : ''}
           <div class="hstack" style="margin-bottom:16px">
             <div class="grow"><b>Portions</b></div>
             <div class="stepper">
@@ -271,7 +305,7 @@ function openMealActions(dayIso, entryId) {
             </select>
           </div>
           <button type="button" class="btn btn-block" data-open>${icon('book')} Voir la recette</button>
-          <button type="button" class="btn btn-block" style="margin-top:10px" data-add-list>${icon('cart')} Ajouter aux courses</button>
+          ${entry.leftoverOf ? '' : `<button type="button" class="btn btn-block" style="margin-top:10px" data-add-list>${icon('cart')} Ajouter aux courses</button>`}
           <button type="button" class="btn btn-block btn-danger" style="margin-top:10px" data-remove>${icon('trash')} Retirer du planning</button>`;
 
         api.body.querySelectorAll('[data-p]').forEach((b) =>
@@ -297,7 +331,7 @@ function openMealActions(dayIso, entryId) {
           api.close();
           setTimeout(() => openRecipeDetail(recipe.id), 320);
         });
-        api.body.querySelector('[data-add-list]').addEventListener('click', () => {
+        api.body.querySelector('[data-add-list]')?.addEventListener('click', () => {
           const n = store.addRecipeToList(recipe.id, entry.servings);
           api.close();
           toast(`${n} ingrédients ajoutés`, { action: 'Annuler', onAction: () => store.undo() });

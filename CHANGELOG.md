@@ -4,6 +4,23 @@ Le numéro affiché dans **Réglages** (et dans la colonne latérale sur grand �
 correspond à celui de `js/version.js`. Le cache hors ligne (`sw.js`) porte le même
 numéro : le changer suffit à faire récupérer la nouvelle version à l'app installée.
 
+## 1.7.0 — batch cooking
+
+Cuisiner une fois, manger plusieurs jours. Quand on ajoute une recette pour plus de
+portions qu'on n'en mange en un repas, l'app propose de répartir le plat sur les jours
+suivants plutôt que de le servir en une seule fois.
+
+- **Interrupteur « Batch cooking »** dans la feuille d'ajout (depuis une recette comme
+  depuis le planning), actif d'emblée dès que le nombre de portions dépasse les portions
+  par repas des réglages
+- Un pas-à-pas **« portions par repas »** calcule le nombre de repas (`⌈total ÷ portions⌉`)
+  et annonce les jours couverts avant de valider
+- Le jour de cuisson porte **toutes les portions** : c'est lui qui fait les courses. Les
+  jours suivants reçoivent des **restes**, marqués comme tels dans le planning
+- Les restes ne sont **ni rachetés ni recomptés dans le budget** — ils restent en revanche
+  comptés dans les apports nutritionnels du jour où on les mange
+- Retirer la cuisson retire aussi ses restes, et la feuille du repas le dit avant
+
 ## 1.6.3 — barre d'onglets collée au bas de l'écran
 
 Sur iPhone en app installée, la barre d'onglets flottait au-dessus du bas de l'écran sur

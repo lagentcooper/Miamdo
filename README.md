@@ -79,6 +79,9 @@ que l'ordinateur soit allumé. Pratique pour essayer, pas pour tous les jours.
 **Semaine**
 - Planning lundi → dimanche, midi et dîner, avec le nombre de convives par repas
 - Navigation de semaine en semaine, déplacement d'un repas d'un jour à l'autre
+- **Batch cooking** : cuisine la quiche pour 6 une seule fois, l'app étale les portions sur
+  les jours suivants. Le jour de cuisson porte les courses, les autres sont des *restes* —
+  ni rachetés, ni recomptés dans le budget, mais bien comptés côté nutrition
 
 **Courses**
 - Génération en un tap depuis **tout le planning à venir** — pas seulement la semaine

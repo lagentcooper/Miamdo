@@ -83,6 +83,7 @@ export function openDayPicker(recipeId, servings) {
   let portions = servings || recipe.servings;
   // on ne propose pas de planifier dans le passé : la liste démarre aujourd'hui
   let showPast = false;
+  let batch = defaultBatch(portions);
 
   openSheet({
     title: 'Planifier',
@@ -107,6 +108,8 @@ export function openDayPicker(recipeId, servings) {
               <button type="button" data-p="1">+</button>
             </div>
           </div>
+
+          ${batchSection(batch, portions)}
 
           <div class="segmented" style="margin-bottom:14px">
             ${activeSlots().map((s) => `<button type="button" class="${slot === s.id ? 'active' : ''}" data-slot="${s.id}">${s.label}</button>`).join('')}
@@ -138,7 +141,13 @@ export function openDayPicker(recipeId, servings) {
           </div>`;
 
         api.body.querySelectorAll('[data-p]').forEach((b) =>
-          b.addEventListener('click', () => { portions = Math.max(1, portions + Number(b.dataset.p)); haptic(); draw(); }));
+          b.addEventListener('click', () => {
+            portions = Math.max(1, portions + Number(b.dataset.p));
+            batch.parRepas = Math.min(batch.parRepas, portions);
+            haptic();
+            draw();
+          }));
+        bindBatchSection(api.body, batch, portions, draw);
         api.body.querySelectorAll('[data-slot]').forEach((b) =>
           b.addEventListener('click', () => { slot = b.dataset.slot; haptic(); draw(); }));
         api.body.querySelector('[data-show-past]')?.addEventListener('click', () => {
@@ -154,17 +163,104 @@ export function openDayPicker(recipeId, servings) {
           }));
         api.body.querySelectorAll('[data-day]').forEach((b) =>
           b.addEventListener('click', () => {
-            store.planAdd(b.dataset.day, recipeId, { servings: portions, slot });
+            const resume = commitPlan(b.dataset.day, recipe, { total: portions, slot, batch });
             haptic(12);
             api.close();
             const { ok, problems } = dietActive() ? checkRecipe(recipe) : { ok: true };
-            toast(ok
-              ? `${recipe.name} planifié`
-              : `${recipe.name} planifié — ⚠︎ ${problemSummary(problems)}`,
-            { action: 'Annuler', onAction: () => store.undo() });
+            toast(ok ? resume : `${resume} — ⚠︎ ${problemSummary(problems)}`,
+              { action: 'Annuler', onAction: () => store.undo() });
           }));
       };
       draw();
     },
   });
+}
+
+/* ------------------------------------------------------- batch cooking ----
+ * Cuisiner une fois pour plusieurs repas : le jour J porte la cuisson et donc
+ * les courses, les jours suivants portent des restes. Partagé par les deux
+ * feuilles de planification (depuis le planning, et depuis une recette).
+ */
+
+/** État initial : proposé d'emblée dès qu'on cuisine plus que sa tablée. */
+export function defaultBatch(total) {
+  const parRepas = Math.max(1, store.getState().settings.defaultServings || 1);
+  return { actif: total > parRepas, parRepas: Math.min(parRepas, total) };
+}
+
+const jourCourt = (iso) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
+
+/** Jours couverts par un batch, en partant de `dayIso`. */
+export function batchDays(dayIso, repas) {
+  const base = new Date(`${dayIso}T12:00:00`).getTime();
+  return Array.from({ length: repas }, (_, i) => isoDate(base + i * 86400000));
+}
+
+export const batchMeals = (total, parRepas) => Math.ceil(total / Math.max(1, parRepas));
+
+/**
+ * Bloc de réglage du batch ; vide si une seule portion.
+ * `dayIso` peut être nul quand le jour n'est pas encore choisi : on décrit
+ * alors la répartition sans annoncer de dates qui seraient fausses.
+ */
+export function batchSection(batch, total, dayIso = null) {
+  if (total < 2) return '';
+  const repas = batchMeals(total, batch.parRepas);
+  const jours = dayIso
+    ? batchDays(dayIso, repas).map(jourCourt).join(', ')
+    : `le jour choisi puis les ${repas - 1} suivants`;
+  return `
+    <div class="rows" style="margin-bottom:14px">
+      <div class="row">
+        <span class="grow">
+          <span class="primary">Batch cooking</span>
+          <span class="secondary">Cuisiner une fois, manger sur plusieurs jours</span>
+        </span>
+        <span class="switch ${batch.actif ? 'on' : ''}" data-batch role="switch"
+          aria-checked="${batch.actif}" tabindex="0"></span>
+      </div>
+      ${batch.actif ? `
+        <div class="row">
+          <span class="grow">
+            <span class="primary">Portions par repas</span>
+            <span class="secondary">${repas} repas · ${escapeHtml(jours)}</span>
+          </span>
+          <span class="stepper">
+            <button type="button" data-par="-1">−</button>
+            <span class="val">${batch.parRepas}</span>
+            <button type="button" data-par="1">+</button>
+          </span>
+        </div>` : ''}
+    </div>`;
+}
+
+export function bindBatchSection(body, batch, total, redraw) {
+  body.querySelector('[data-batch]')?.addEventListener('click', () => {
+    batch.actif = !batch.actif;
+    haptic();
+    redraw();
+  });
+  body.querySelectorAll('[data-par]').forEach((b) =>
+    b.addEventListener('click', () => {
+      batch.parRepas = Math.max(1, Math.min(total, batch.parRepas + Number(b.dataset.par)));
+      haptic();
+      redraw();
+    }));
+}
+
+/**
+ * Enregistre le repas, en batch ou non.
+ * → texte prêt pour la notification.
+ */
+export function commitPlan(dayIso, recipe, { total, slot, batch }) {
+  const enBatch = batch?.actif && batchMeals(total, batch.parRepas) > 1;
+  if (!enBatch) {
+    store.planAdd(dayIso, recipe.id, { servings: total, slot });
+    return `${recipe.name} ajouté`;
+  }
+  const { repas } = store.planAddBatch(dayIso, recipe.id, {
+    servings: total, portionsParRepas: batch.parRepas, slot,
+  });
+  return `${recipe.name} : ${repas} repas, cuisiné une fois`;
 }
