@@ -158,7 +158,7 @@ que l'ordinateur soit allumé. Pratique pour essayer, pas pour tous les jours.
   Miamdo reconnaît le titre, « Pour 4 personnes », le temps, les ingrédients avec leurs
   quantités (`2 c. à s. d'huile`, `½ citron`, `200g farine`) et les étapes numérotées —
   tu vérifies l'aperçu avant d'enregistrer
-- 💡 **Parcourir des idées** : bibliothèque de 49 recettes filtrable par **catégorie**,
+- 💡 **Parcourir des idées** : bibliothèque de 113 recettes filtrable par **catégorie**,
   **temps** (20 / 45 min max) et **budget** (2 / 4 € par personne max), avec le coût
   estimé affiché avant l'ajout
 - 📋 Le collage accepte **plusieurs recettes d'un coup** : le texte est découpé
@@ -214,7 +214,7 @@ js/
   weekstate.js          semaine affichée, partagée entre les vues
   data/seed.js          catégories et recettes de démarrage
   data/prices.js        barème de prix indicatif (221 produits)
-  data/library.js       bibliothèque de 49 idées de recettes
+  data/library.js       bibliothèque de 113 idées de recettes
   data/nutrition.js     table de composition (225 aliments)
   data/staples.js       basiques supposés toujours présents
   data/families.js      ingrédients interchangeables

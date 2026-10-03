@@ -4,6 +4,38 @@ Le numéro affiché dans **Réglages** (et dans la colonne latérale sur grand �
 correspond à celui de `js/version.js`. Le cache hors ligne (`sw.js`) porte le même
 numéro : le changer suffit à faire récupérer la nouvelle version à l'app installée.
 
+## 1.8.0 — 113 idées de recettes, et des étapes qui expliquent vraiment
+
+La bibliothèque d'idées passe de **49 à 113 recettes**, et toutes les étapes de préparation
+ont été réécrites.
+
+- **64 nouvelles idées** : mijotés (osso-buco, daube, goulash, navarin, bœuf aux carottes,
+  cassoulet, couscous), gratins et plats au four (hachis parmentier, moussaka, lasagnes de
+  légumes, endives au jambon, quiche saumon-épinards), plats de semaine (pad thaï, teriyaki,
+  one pot pasta, quesadillas, rösti, wraps), salades et soupes, sauces (beurre blanc,
+  chimichurri, barbecue maison), apéro (tapenade, caviar d'aubergine, falafels) et desserts
+  (crumble, tarte aux pommes, brownie, panna cotta, crème caramel, gaufres, quatre-quarts)
+- **Les étapes passent de 2,5 à 7 par recette**, et de 8 à 20 mots en moyenne. Chacune donne
+  le feu, la durée, et le repère qui dit qu'on peut passer à la suite : « les grains doivent
+  devenir translucides sur les bords », « la sauce doit napper le dos d'une cuillère »
+- Elles disent aussi **pourquoi** : pourquoi ne pas rincer les pommes de terre du gratin,
+  pourquoi saler les champignons en fin de cuisson, pourquoi le miso ne doit jamais bouillir
+
+Trois corrections trouvées en vérifiant les prix des nouvelles recettes :
+
+- **Les pluriels en `-eaux` perdaient leur radical** : « poireaux » devenait « poir » et ne
+  retrouvait plus « poireau » dans le barème. Vérifié sur les 215 ingrédients du carnet et de
+  la bibliothèque : une seule correspondance change, celle des poireaux
+- **Poids des pièces** : à défaut, une pièce valait 150 g — soit 18 € de gélatine pour une
+  panna cotta et 6,75 € de piment pour un plat de pâtes. Feuille de gélatine, piment, merguez,
+  saucisse, chorizo, bûche de chèvre, endive, navet et figue ont désormais leur poids réel
+- **Gâteau au yaourt** : les quantités « en pots » étaient lues comme des conserves de 400 g,
+  d'où un gâteau à 1 895 kcal la part. Elles sont écrites en grammes, et l'astuce du pot reste
+  expliquée dans la première étape
+
+Anchois et câpres rejoignent le barème de prix et la table nutritionnelle. Les 113 idées sont
+chiffrées et analysées de bout en bout, sans un seul ingrédient hors barème.
+
 ## 1.7.1 — la barre d'onglets revient dans l'écran
 
 La correction de la 1.6.3 allait dans le mauvais sens. Mesuré sur la capture : la barre
