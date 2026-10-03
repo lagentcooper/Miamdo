@@ -27,7 +27,10 @@ export const PIECE_WEIGHT = {
   'pate feuilletee': 230, 'pate brisee': 230, 'pate sablee': 230,
   bouillon: 10, ail: 60, 'poulet entier': 1400, biscuit: 8, 'biscuit cuillere': 8,
   reblochon: 450, 'pain de mie': 25, courge: 1000, potiron: 1200,
-  brocoli: 500, chou: 900, poireau: 200,
+  brocoli: 500, chou: 900, poireau: 200, endive: 100, navet: 120, figue: 50,
+  // à défaut, une pièce vaut 150 g — ce qui était très loin du compte pour
+  // une feuille de gélatine (2 g) ou un piment (15 g).
+  gelatine: 2, piment: 15, merguez: 70, saucisse: 120, chorizo: 200, chevre: 180,
 };
 
 export const DEFAULT_PIECE_WEIGHT = 150;
