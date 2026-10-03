@@ -10,7 +10,7 @@
 export const PRICE_META = {
   enseigne: 'Intermarché',
   ville: 'Toulouse',
-  releve: 'septembre 2026',
+  releve: 'octobre 2026, d’après ticket de caisse',
 };
 
 export const PRICE_CATALOG = [
@@ -19,7 +19,8 @@ export const PRICE_CATALOG = [
   { key: 'tomate pelee', label: 'Tomates pelées (conserve)', unit: 'kg', price: 1.75 },
   { key: 'tomate', label: 'Tomates', unit: 'kg', price: 2.95 },
   { key: 'pomme de terre', label: 'Pommes de terre', unit: 'kg', price: 1.55 },
-  { key: 'carotte', label: 'Carottes', unit: 'kg', price: 1.45 },
+  { key: 'carotte', label: 'Carottes', unit: 'kg', price: 1.79 },
+  { key: 'oignon rouge', label: 'Oignons rouges', unit: 'kg', price: 3.99 },
   { key: 'oignon', label: 'Oignons', unit: 'kg', price: 1.85 },
   { key: 'echalote', label: 'Échalotes', unit: 'kg', price: 4.50 },
   { key: 'ail', label: 'Ail', unit: 'kg', price: 8.90 },
@@ -84,7 +85,8 @@ export const PRICE_CATALOG = [
   { key: 'escalope', label: 'Escalopes', unit: 'kg', price: 12.50 },
   { key: 'cuisse de poulet', label: 'Cuisses de poulet', unit: 'kg', price: 4.90 },
   { key: 'poulet', label: 'Poulet', unit: 'kg', price: 10.90 },
-  { key: 'steak hache', label: 'Steak haché', unit: 'kg', price: 11.90 },
+  { key: 'steak hache', label: 'Steak haché', unit: 'kg', price: 16.25 },
+  { key: 'boeuf hache', label: 'Bœuf haché', unit: 'kg', price: 16.25 },
   { key: 'boeuf', label: 'Bœuf', unit: 'kg', price: 14.90 },
   { key: 'steak', label: 'Steak', unit: 'kg', price: 14.90 },
   { key: 'porc', label: 'Porc', unit: 'kg', price: 8.90 },
@@ -114,7 +116,7 @@ export const PRICE_CATALOG = [
   { key: 'lait de coco', label: 'Lait de coco', unit: 'l', price: 2.90 },
   { key: 'lait amande', label: 'Lait d’amande', unit: 'l', price: 2.20 },
   { key: 'lait avoine', label: 'Lait d’avoine', unit: 'l', price: 1.90 },
-  { key: 'lait', label: 'Lait', unit: 'l', price: 1.15 },
+  { key: 'lait', label: 'Lait', unit: 'l', price: 1.08 },
   { key: 'beurre', label: 'Beurre', unit: 'kg', price: 11.50 },
   { key: 'creme liquide', label: 'Crème liquide', unit: 'l', price: 4.20 },
   { key: 'creme fraiche', label: 'Crème fraîche', unit: 'kg', price: 5.50 },
@@ -144,7 +146,7 @@ export const PRICE_CATALOG = [
   { key: 'spaghetti', label: 'Spaghettis', unit: 'kg', price: 1.75 },
   { key: 'penne', label: 'Penne', unit: 'kg', price: 1.75 },
   { key: 'tagliatelle', label: 'Tagliatelles', unit: 'kg', price: 2.60 },
-  { key: 'lasagne', label: 'Lasagnes', unit: 'kg', price: 3.20 },
+  { key: 'lasagne', label: 'Lasagnes', unit: 'kg', price: 4.04 },
   { key: 'coquillette', label: 'Coquillettes', unit: 'kg', price: 1.60 },
   { key: 'pate', label: 'Pâtes', unit: 'kg', price: 1.75 },
   { key: 'riz', label: 'Riz', unit: 'kg', price: 2.30 },
@@ -160,6 +162,8 @@ export const PRICE_CATALOG = [
   { key: 'boulgour', label: 'Boulgour', unit: 'kg', price: 2.90 },
   { key: 'polenta', label: 'Polenta', unit: 'kg', price: 2.20 },
   { key: 'nouille', label: 'Nouilles', unit: 'kg', price: 3.50 },
+  { key: 'tortellini', label: 'Pâtes fraîches farcies', unit: 'kg', price: 5.95 },
+  { key: 'cereale', label: 'Céréales du petit-déjeuner', unit: 'kg', price: 8.60 },
   { key: 'farine', label: 'Farine', unit: 'kg', price: 1.20 },
   { key: 'maizena', label: 'Maïzena', unit: 'kg', price: 3.50 },
   { key: 'chapelure', label: 'Chapelure', unit: 'kg', price: 3.20 },
@@ -181,6 +185,7 @@ export const PRICE_CATALOG = [
   { key: 'ketchup', label: 'Ketchup', unit: 'kg', price: 3.20 },
   { key: 'mayonnaise', label: 'Mayonnaise', unit: 'kg', price: 5.50 },
   { key: 'sauce soja', label: 'Sauce soja', unit: 'l', price: 5.90 },
+  { key: 'sriracha', label: 'Sauce sriracha', unit: 'l', price: 12.90 },
   { key: 'concentre de tomate', label: 'Concentré de tomate', unit: 'kg', price: 3.50 },
   { key: 'coulis', label: 'Coulis de tomate', unit: 'kg', price: 1.90 },
   { key: 'bouillon de legumes', label: 'Bouillon de légumes (reconstitué)', unit: 'l', price: 0.30 },
@@ -256,7 +261,7 @@ export const PRICE_CATALOG = [
   { key: 'cidre', label: 'Cidre', unit: 'l', price: 3.00 },
   // `volumePrice` : prix de la boisson préparée, utilisé quand la recette
   // exprime l'ingrédient en volume (« 30 cl de café »).
-  { key: 'cafe', label: 'Café', unit: 'kg', price: 18.00, volumePrice: 0.70 },
+  { key: 'cafe', label: 'Café moulu', unit: 'kg', price: 15.10, volumePrice: 0.60 },
   { key: 'the', label: 'Thé', unit: 'kg', price: 40.00, volumePrice: 0.40 },
 
   /* -------------------------------------------------- maison & entretien */

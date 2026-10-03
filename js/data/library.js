@@ -720,6 +720,19 @@ export const LIBRARY = [
     'Griller les tranches de pain et les tartiner généreusement d’avocat.',
     'Poser un œuf poché sur chaque tartine, saler, poivrer, saupoudrer de piment. Le jaune doit couler quand on le perce.',
   ]),
+  R('Fajitas de poulet', '🌮', ['rapide'], 4, 30, [
+    '8 tortillas', '600 g de filets de poulet', '3 poivrons', '1 oignon rouge',
+    '2 c. à c. de paprika', '1 c. à c. de cumin', '1 citron vert',
+    '2 c. à s. d’huile d’olive', '100 g de cheddar', '10 cl de crème fraîche',
+  ], [
+    'Tailler le poulet en lanières de 1 cm dans le sens de la largeur, et non de la longueur : les fibres raccourcies donnent une viande qui reste tendre à la poêle.',
+    'Les mélanger dans un saladier avec le paprika, le cumin, l’huile d’olive, le jus d’un demi-citron vert, du sel et du poivre. Laisser mariner 15 min pendant qu’on taille le reste.',
+    'Couper les poivrons et l’oignon rouge en lanières de la même épaisseur que le poulet, pour que tout cuise au même rythme.',
+    'Chauffer une grande poêle à feu très vif. Y saisir le poulet en une seule couche, sans l’entasser — en deux fois s’il le faut. Le laisser 2 min sans y toucher pour qu’il colore, puis 2 min en remuant. Réserver.',
+    'Dans la même poêle, sauter les légumes 6 min à feu vif. Ils doivent noircir légèrement sur les arêtes tout en restant croquants : c’est cette cuisson courte et brutale qui fait la fajita, à feu doux ils rendraient leur eau et deviendraient mous.',
+    'Remettre le poulet et son jus, mélanger 1 min, puis couper le feu et arroser du reste de jus de citron vert.',
+    'Chauffer les tortillas 20 secondes par face dans une poêle sèche : froides elles craquent au pliage. Servir la poêlée au centre de la table, avec le cheddar râpé et la crème fraîche, chacun garnit et roule la sienne.',
+  ]),
   R('Quesadillas poulet-cheddar', '🫓', ['rapide'], 2, 15, [
     '4 tortillas', '250 g de filets de poulet', '120 g de cheddar',
     '1 poivron', '1 oignon', '1 c. à c. de paprika',

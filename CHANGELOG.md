@@ -4,12 +4,12 @@ Le numéro affiché dans **Réglages** (et dans la colonne latérale sur grand �
 correspond à celui de `js/version.js`. Le cache hors ligne (`sw.js`) porte le même
 numéro : le changer suffit à faire récupérer la nouvelle version à l'app installée.
 
-## 1.8.0 — 113 idées de recettes, et des étapes qui expliquent vraiment
+## 1.8.0 — 114 idées de recettes, des étapes qui expliquent, et des prix relevés sur ticket
 
-La bibliothèque d'idées passe de **49 à 113 recettes**, et toutes les étapes de préparation
+La bibliothèque d'idées passe de **49 à 114 recettes**, et toutes les étapes de préparation
 ont été réécrites.
 
-- **64 nouvelles idées** : mijotés (osso-buco, daube, goulash, navarin, bœuf aux carottes,
+- **65 nouvelles idées**, dont les **fajitas de poulet** : mijotés (osso-buco, daube, goulash, navarin, bœuf aux carottes,
   cassoulet, couscous), gratins et plats au four (hachis parmentier, moussaka, lasagnes de
   légumes, endives au jambon, quiche saumon-épinards), plats de semaine (pad thaï, teriyaki,
   one pot pasta, quesadillas, rösti, wraps), salades et soupes, sauces (beurre blanc,
@@ -33,8 +33,30 @@ Trois corrections trouvées en vérifiant les prix des nouvelles recettes :
   d'où un gâteau à 1 895 kcal la part. Elles sont écrites en grammes, et l'astuce du pot reste
   expliquée dans la première étape
 
-Anchois et câpres rejoignent le barème de prix et la table nutritionnelle. Les 113 idées sont
+Anchois et câpres rejoignent le barème de prix et la table nutritionnelle. Les 114 idées sont
 chiffrées et analysées de bout en bout, sans un seul ingrédient hors barème.
+
+### Prix recalés sur un ticket de caisse
+
+Relevé du 3 octobre 2026, Intermarché Toulouse Minimes. Les lignes dont le ticket imprime le
+prix au kilo sont reprises telles quelles ; celles où il faut deviner le poids de l'emballage
+ne sont corrigées que lorsque ce poids est certain.
+
+- **Carottes** 1,45 → **1,79 €/kg**, et **oignons rouges** à **3,99 €/kg** — nouvelle entrée,
+  ils étaient jusqu'ici comptés au prix des oignons jaunes. Ces deux-là sont pesés sur le
+  ticket, le prix au kilo y figure en toutes lettres.
+- **Café moulu** 18,00 → **15,10 €/kg** (250 g marqués sur le ticket).
+- **Lasagnes** 3,20 → **4,04 €/kg** (étui Barilla de 500 g).
+- **Lait** 1,15 → **1,08 €/l** (bouteille d'un litre).
+- **Bœuf haché** : nouvelle entrée à **16,25 €/kg**, distincte du bœuf à braiser resté à
+  14,90 €/kg. Le poids de la barquette vrac est déduit du libellé tronqué du ticket.
+- Nouvelles entrées pour des produits du ticket qui manquaient au barème : **sauce sriracha**,
+  **pâtes fraîches farcies**, **céréales du petit-déjeuner**.
+
+Quatre lignes du ticket n'ont pas été reprises faute de connaître le poids de l'emballage —
+jambon Herta, emmental râpé Président, sauce soja Kikkoman et purée de tomates. Les valeurs
+calculées à partir des formats courants tombent de toute façon tout près de celles du barème.
+**Réglages → Mes prix** permet de les corriger en un tap.
 
 ## 1.7.1 — la barre d'onglets revient dans l'écran
 
