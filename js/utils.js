@@ -21,7 +21,10 @@ export function normalize(str = '') {
 export function ingredientKey(name = '') {
   return normalize(name)
     .split(' ')
-    .map((w) => (w.length > 3 ? w.replace(/(aux|eaux|x|s)$/, '') : w))
+    // pluriel : on ne retire que le « s » ou le « x » final. Retirer « eaux »
+    // amputait le radical — « poireaux » devenait « poir » et ne retrouvait
+    // plus « poireau » dans le barème.
+    .map((w) => (w.length > 3 ? w.replace(/[sx]$/, '') : w))
     .join(' ');
 }
 
