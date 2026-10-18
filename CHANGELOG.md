@@ -4,6 +4,48 @@ Le numéro affiché dans **Réglages** (et dans la colonne latérale sur grand �
 correspond à celui de `js/version.js`. Le cache hors ligne (`sw.js`) porte le même
 numéro : le changer suffit à faire récupérer la nouvelle version à l'app installée.
 
+## 1.9.0 — « Compose ma semaine »
+
+Un assistant qui propose un menu complet à partir de quelques critères, et le pose sur les
+jours libres du planning. Bouton **Composer ma semaine** dans l'onglet Semaine.
+
+### Les critères
+
+- **Repas à couvrir** et surtout **combien de fois on cuisine**. Mis à 1, l'assistant choisit
+  un plat qui tient la semaine et le répartit en restes — le batch cooking devient le réglage
+  par défaut de quelqu'un qui vit seul, et non une option à activer plat par plat
+- **Temps par cuisson** : 15, 30, 45 min ou peu importe
+- **Budget pour la période** : si le menu dépasse, l'assistant remplace le plat le plus cher
+  par le meilleur candidat qui rentre, et recommence jusqu'à tenir l'enveloppe
+- **Vider le placard d'abord** : le moteur du placard fait remonter les plats qui écoulent ce
+  qu'on a déjà, et la liste de courses s'en trouve raccourcie d'autant
+- **Varier** : évite deux fois le même ingrédient principal, et deux fois la même humeur
+
+### Les envies
+
+Six pastilles — **Réconfort · Léger · Asiatique · Italien · Épicé · Au four**. Elles ne sont
+pas saisies recette par recette mais **déduites** du nom, des ingrédients et des étapes : les
+recettes que tu ajoutes toi-même entrent dans le jeu sans rien avoir à étiqueter.
+
+« Sans cuisson » a été écartée : une fois les sauces, l'apéro et les desserts sortis du vivier,
+elle ne retenait qu'un seul plat.
+
+### Ce qu'il ne fait pas
+
+Il **ne touche jamais à un repas déjà planifié**. Il ne remplit que les créneaux vides, et il
+évite aussi de reproposer un plat déjà prévu ailleurs dans la période. Chaque plat se remplace
+d'un tap, et « Annuler » défait le menu entier d'un coup — les recettes venues des idées
+comprises.
+
+### Au passage
+
+- Les **sauces, apéritifs et desserts** sont exclus des propositions de repas : ils restent au
+  carnet, mais un menu se compose de plats
+- `resolveCategories` quitte la vue pour le module `library.js` : l'assistant en a besoin pour
+  ranger les recettes qu'il fait entrer au carnet
+- Nouveau `store.applyMenu` : tout le menu est posé dans **un seul commit**, pour qu'« Annuler »
+  défasse le menu et non le dernier repas
+
 ## 1.8.0 — 114 idées de recettes, des étapes qui expliquent, et des prix relevés sur ticket
 
 La bibliothèque d'idées passe de **49 à 114 recettes**, et toutes les étapes de préparation

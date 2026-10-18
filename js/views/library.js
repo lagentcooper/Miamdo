@@ -4,27 +4,13 @@ import * as store from '../store.js';
 import { icon, openSheet, toast, haptic } from '../ui.js';
 import { escapeHtml, formatTime, formatQty, normalize } from '../utils.js';
 import { LIB_TAGS } from '../data/library.js';
-import { LIBRARY, buildRecipe, libraryRecipes } from '../library.js';
+import { LIBRARY, buildRecipe, libraryRecipes, resolveCategories } from '../library.js';
 import { recipeCost, formatEuro } from '../prices.js';
 import { recipeNutrition, formatKcal } from '../nutrition.js';
 import { checkRecipe, dietActive, problemSummary, dietConfig } from '../diet.js';
 
 export { buildRecipe };
 
-/** Retrouve (ou crée) les catégories correspondant aux tags d'une idée. */
-function resolveCategories(tags) {
-  const ids = [];
-  for (const tag of tags) {
-    const def = LIB_TAGS[tag];
-    if (!def) continue;
-    const existing = store.getState().categories.find(
-      (c) => c.id === def.id || normalize(c.name) === normalize(def.name)
-    );
-    if (existing) ids.push(existing.id);
-    else ids.push(store.addCategory({ name: def.name, emoji: def.emoji, color: def.color }).id);
-  }
-  return ids;
-}
 
 const alreadyAdded = (name) =>
   store.getState().recipes.some((r) => normalize(r.name) === normalize(name));

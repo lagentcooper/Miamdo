@@ -79,6 +79,9 @@ que l'ordinateur soit allumé. Pratique pour essayer, pas pour tous les jours.
 **Semaine**
 - Planning lundi → dimanche, midi et dîner, avec le nombre de convives par repas
 - Navigation de semaine en semaine, déplacement d'un repas d'un jour à l'autre
+- **Composer ma semaine** : quelques critères — combien de repas, combien de fois tu cuisines,
+  temps, budget, envie du moment, vider le placard — et l'app propose un menu complet posé sur
+  les jours libres. Chaque plat se remplace d'un tap. Elle ne touche jamais à un repas déjà prévu
 - **Batch cooking** : cuisine la quiche pour 6 une seule fois, l'app étale les portions sur
   les jours suivants. Le jour de cuisson porte les courses, les autres sont des *restes* —
   ni rachetés, ni recomptés dans le budget, mais bien comptés côté nutrition
@@ -201,6 +204,7 @@ css/style.css           design system (variables, thème clair/sombre, safe area
 js/
   app.js                navigation par onglets, rendu réactif
   store.js              état + persistance localStorage + agrégation de la liste
+  menu.js               moteur de composition de menu (critères → proposition)
   utils.js              unités & conversions, lecture des quantités, rayons, dates
   prices.js             moteur d'estimation des coûts
   pantry.js             placard : basiques, rapprochements, suggestions
@@ -213,14 +217,16 @@ js/
   ui.js                 icônes SVG, feuilles modales, toasts, confirmations
   weekstate.js          semaine affichée, partagée entre les vues
   data/seed.js          catégories et recettes de démarrage
-  data/prices.js        barème de prix indicatif (221 produits)
+  data/prices.js        barème de prix indicatif, relevé sur ticket
   data/library.js       bibliothèque de 114 idées de recettes
+  data/moods.js         les envies, et comment on les devine d’une recette
   data/nutrition.js     table de composition (225 aliments)
   data/staples.js       basiques supposés toujours présents
   data/families.js      ingrédients interchangeables
   data/allergens.js     étiquetage des ingrédients (11 catégories)
   views/                recipes · week · shopping · settings · pickers
                         pricesView · importText · library · share · pantry · dietView
+                        menuWizard — l’assistant « Compose ma semaine »
 assets/icons/           icônes de l'app (générées depuis tools/icon.svg)
 tools/render-icons.mjs  régénère les PNG depuis le SVG (npm i -D playwright)
 ```
