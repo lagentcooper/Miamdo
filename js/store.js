@@ -257,6 +257,54 @@ export function planAddBatch(dayIso, recipeId, {
   return { cuisson, repas, jours, parRepas };
 }
 
+/**
+ * Pose un menu composé d'un coup : les recettes qui viennent des idées entrent
+ * au carnet, chaque bloc pose sa cuisson puis ses restes. Tout tient dans un
+ * seul commit, pour qu'« Annuler » défasse le menu entier et non le dernier
+ * repas seulement.
+ *
+ * `blocs` : [{ recipe, nouvelle, categoryIds, repas: [{ dayIso, slot, servings, role }] }]
+ */
+export function applyMenu(blocs) {
+  const ajoutees = [];
+  const poses = [];
+
+  commit((s) => {
+    for (const bloc of blocs) {
+      let { id } = bloc.recipe;
+      if (bloc.nouvelle || !s.recipes.some((r) => r.id === id)) {
+        const copie = normalizeRecipe({
+          ...JSON.parse(JSON.stringify(bloc.recipe)),
+          id: undefined,
+          categoryIds: bloc.categoryIds || bloc.recipe.categoryIds || [],
+        });
+        copie.updatedAt = Date.now();
+        s.recipes.unshift(copie);
+        ajoutees.push(copie);
+        id = copie.id;
+      }
+
+      let cuissonId = null;
+      for (const repas of bloc.repas) {
+        const entry = {
+          id: uid('plan'),
+          recipeId: id,
+          slot: repas.slot,
+          servings: Math.max(1, Number(repas.servings) || 1),
+          ...(repas.role === 'restes' && cuissonId ? { leftoverOf: cuissonId } : {}),
+        };
+        if (repas.role !== 'restes') cuissonId = entry.id;
+        if (!s.plan[repas.dayIso]) s.plan[repas.dayIso] = [];
+        s.plan[repas.dayIso].push(entry);
+        poses.push(entry);
+      }
+    }
+    s.planUpdatedAt = Date.now();
+  }, { undoLabel: 'Menu composé' });
+
+  return { ajoutees, repas: poses.length };
+}
+
 /** Retrouve une entrée de planning par son identifiant. */
 export function findPlanEntry(entryId) {
   for (const [day, entries] of Object.entries(state.plan)) {

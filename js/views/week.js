@@ -7,6 +7,7 @@ import {
 } from '../utils.js';
 import { weekState, currentWeekStart } from '../weekstate.js';
 import { activeSlots, slotLabel, defaultSlot } from '../slots.js';
+import { openMenuWizard, creneauxLibres } from './menuWizard.js';
 import {
   openRecipePicker, defaultBatch, batchSection, bindBatchSection, commitPlan,
 } from './pickers.js';
@@ -97,6 +98,9 @@ export function render({ topbar, view }) {
       </section>`;
   };
 
+  // des cases libres restent-elles à remplir cette semaine ?
+  const libres = creneauxLibres(isoList, activeSlots().map((s) => s.id)).length;
+
   view.innerHTML = `
     ${planned ? `
       <div class="hero">
@@ -104,18 +108,25 @@ export function render({ topbar, view }) {
         <p>${budget && budget.total ? `Budget de la semaine <b>≈ ${formatEuro(budget.total)}</b>. ` : ''}La liste
           couvre <b>tout ton planning à venir</b> — ${repasCouverts} repas — ingrédients additionnés
           et rangés par rayon.</p>
-        <button type="button" class="btn" data-generate>${icon('sparkles')} Générer la liste</button>
+        <button type="button" class="btn" data-generate>${icon('cart')} Générer la liste</button>
+        ${libres ? `<button type="button" class="btn" style="margin-left:8px" data-compose>${icon('sparkles')} Composer un menu</button>` : ''}
       </div>` : `
       <div class="hero">
         <h2>Compose ta semaine</h2>
         <p>Ajoute des recettes aux jours qui t’arrangent, puis génère la liste en un tap.</p>
-        <button type="button" class="btn" data-add-day="${isoList[0]}">${icon('plus')} Planifier un repas</button>
+        <button type="button" class="btn btn-primary" data-compose>${icon('sparkles')} Composer ma semaine</button>
+        <button type="button" class="btn" style="margin-left:8px" data-add-day="${isoList[0]}">${icon('plus')} Un repas</button>
       </div>`}
     <div class="day-grid" style="margin-top:16px">${days.map(dayCard).join('')}</div>
     ${planned ? `<button type="button" class="btn btn-block btn-danger" style="margin-top:6px" data-clear-week>${icon('trash')} Vider la semaine</button>` : ''}
     <div data-spacer aria-hidden="true"></div>`;
 
   /* interactions */
+  delegate(view, '[data-compose]', 'click', () => {
+    haptic(12);
+    openMenuWizard(isoList, { onDone: rerender });
+  });
+
   delegate(topbar, '[data-week]', 'click', (e, el) => {
     weekState.monday = addDays(weekState.monday, 7 * Number(el.dataset.week));
     haptic();
