@@ -161,6 +161,11 @@ que l'ordinateur soit allumé. Pratique pour essayer, pas pour tous les jours.
   Miamdo reconnaît le titre, « Pour 4 personnes », le temps, les ingrédients avec leurs
   quantités (`2 c. à s. d'huile`, `½ citron`, `200g farine`) et les étapes numérotées —
   tu vérifies l'aperçu avant d'enregistrer
+- 🧩 **Recettes en plusieurs parties** : une parenthèse en fin de ligne — `1 c. à c. de
+  poivre (marinade)`, `2 gousses d'ail (sauce)` — est lue comme la partie de la recette à
+  laquelle l'ingrédient appartient. Les ingrédients d'une même partie sont rassemblés et
+  affichés sous leur propre sous-titre. Une parenthèse qui n'apparaît qu'une fois, comme
+  `(400 g)` ou `(râpé)`, reste dans le nom
 - 💡 **Parcourir des idées** : bibliothèque de 114 recettes filtrable par **catégorie**,
   **temps** (20 / 45 min max) et **budget** (2 / 4 € par personne max), avec le coût
   estimé affiché avant l'ajout

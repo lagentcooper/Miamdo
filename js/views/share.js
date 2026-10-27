@@ -7,15 +7,18 @@ import { escapeHtml, formatQty, formatTime, UNITS } from '../utils.js';
 /* ---------------------------------------------------------------- texte */
 
 /** Une ligne d'ingrédient lisible et relisible : « 200 g de spaghettis ». */
+// la composante entre parenthèses, telle que l'import sait la relire
+const suffixe = (ing) => (ing.group ? ` (${ing.group})` : '');
+
 function ingredientLine(ing) {
   // « 400 g de spaghettis » se lit mieux que « de Spaghettis »
   const name = ing.name.charAt(0).toLowerCase() + ing.name.slice(1);
-  if (!ing.qty) return `- ${name}`;
+  if (!ing.qty) return `- ${name}${suffixe(ing)}`;
   const label = UNITS[ing.unit]?.label;
   const qty = formatQty(ing.qty, ing.unit);
   // avec une unité de mesure on écrit « de », avec des pièces non.
   const linker = label && !['piece', 'qs'].includes(ing.unit) ? ' de ' : ' ';
-  return `- ${qty}${linker}${name}`;
+  return `- ${qty}${linker}${name}${suffixe(ing)}`;
 }
 
 /** Met la recette au format texte, celui que l'import sait relire. */
@@ -61,7 +64,8 @@ function pack(recipe, servings) {
     e: recipe.emoji,
     s: servings,
     t: recipe.time,
-    i: recipe.ingredients.map((g) => [g.name, Math.round(g.qty * ratio * 100) / 100, g.unit]),
+    i: recipe.ingredients.map((g) => [g.name, Math.round(g.qty * ratio * 100) / 100, g.unit,
+      ...(g.group ? [g.group] : [])]),
     p: recipe.steps,
     o: recipe.notes || undefined,
   };
@@ -74,10 +78,11 @@ export function unpack(data) {
     emoji: typeof data.e === 'string' ? [...data.e][0] : '🍽️',
     servings: Math.max(1, Math.min(50, Number(data.s) || 2)),
     time: Math.max(0, Math.min(2000, Number(data.t) || 0)),
-    ingredients: (Array.isArray(data.i) ? data.i : []).slice(0, 60).map(([name, qty, unit]) => ({
+    ingredients: (Array.isArray(data.i) ? data.i : []).slice(0, 60).map(([name, qty, unit, group]) => ({
       name: String(name || '').slice(0, 80),
       qty: Number(qty) || 0,
       unit: UNITS[unit] ? unit : 'piece',
+      ...(group ? { group: String(group).slice(0, 30) } : {}),
     })),
     steps: (Array.isArray(data.p) ? data.p : []).slice(0, 40).map((s) => String(s).slice(0, 400)),
     notes: data.o ? String(data.o).slice(0, 600) : '',
