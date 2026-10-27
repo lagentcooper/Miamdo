@@ -7,6 +7,11 @@ const ING_HEADER = /^(ingr[ée]dients?|pour la (p[âa]te|sauce|garniture|cr[èe]
 const STEP_HEADER = /^(pr[ée]paration|[ée]tapes?|instructions?|r[ée]alisation|marche [àa] suivre|recette|d[ée]roul[ée])\s*:?\s*$/i;
 const NOTE_HEADER = /^(notes?|astuces?|conseils?|remarques?|variantes?)\s*:?\s*/i;
 const BULLET = /^[-–—•*·▪]\s*/;
+// « 1 c. à c. de poivre (poulet) » : la parenthèse finale dit à quelle partie
+// de la recette l'ingrédient appartient — marinade, salade, sauce…
+const COMPONENT = /\s*[(（]\s*([^)）]{1,26}?)\s*[)）]\s*$/;
+// composantes assez courantes pour être reconnues dès la première occurrence
+const KNOWN_COMPONENTS = /^(p[âa]te|garniture|sauce|marinade|cr[èe]me|salade|topping|d[ée]cor|accompagnement|dressing|farce|gla[çc]age|sirop|base|fond|montage|service|assaisonnement)s?$/i;
 const NUMBERED = /^(?:[ée]tape\s*)?\d{1,2}\s*[).:/-]\s+/i;
 const EMOJI_START = /^([\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}]+)\s*/u;
 const META_LINE = /^(temps|pr[ée]paration|cuisson|repos|difficult[ée]|co[ûu]t|portions?|parts?)\s*[:=]/i;
@@ -62,7 +67,7 @@ function readTime(lines) {
 
 const cleanStep = (line) => line.replace(BULLET, '').replace(NUMBERED, '').trim();
 
-function toIngredient(line) {
+function toIngredient(line, group = '') {
   const parsed = parseQuantity(line);
   if (!parsed) return null;
   return {
@@ -71,7 +76,41 @@ function toIngredient(line) {
     qty: parsed.qty,
     unit: parsed.unit,
     rayon: guessRayon(parsed.name),
+    ...(group ? { group } : {}),
   };
+}
+
+/**
+ * Relève les composantes du bloc d'ingrédients. Une parenthèse finale n'est
+ * retenue comme composante que si elle revient au moins deux fois — « (400 g) »
+ * ou « (râpé) », qui n'apparaissent qu'une fois, restent dans le nom — ou si
+ * c'est un mot de composante usuel.
+ */
+function detectComponents(lines) {
+  const compte = new Map();
+  for (const line of lines) {
+    if (NUMBERED.test(line)) continue;
+    const m = line.match(COMPONENT);
+    if (!m) continue;
+    const brut = m[1].trim();
+    if (/\d/.test(brut) || brut.split(/\s+/).length > 3) continue;
+    const cle = brut.toLowerCase();
+    compte.set(cle, (compte.get(cle) || 0) + 1);
+  }
+  const retenues = new Set();
+  for (const [cle, n] of compte) {
+    if (n >= 2 || KNOWN_COMPONENTS.test(cle)) retenues.add(cle);
+  }
+  return retenues;
+}
+
+/** Sépare une ligne d'ingrédient de sa composante, si c'en est une. */
+function splitComponent(line, components) {
+  const m = line.match(COMPONENT);
+  if (!m) return { body: line, group: '' };
+  const brut = m[1].trim();
+  if (!components.has(brut.toLowerCase())) return { body: line, group: '' };
+  return { body: line.replace(COMPONENT, '').trim(), group: brut };
 }
 
 /** « sel, poivre, huile d'olive » → trois ingrédients. */
@@ -86,6 +125,15 @@ function looksLikeStep(line, hasQty) {
   if (hasQty) return false;
   const words = line.split(/\s+/).length;
   return VERB_START.test(line) || words >= 6 || line.length > 55;
+}
+
+/**
+ * Un titre, lui, a le droit d'être long : « Wrap shawarma poulet fromage à
+ * l'ail » fait six mots et n'en reste pas moins un titre. On ne l'écarte que
+ * s'il commence comme une instruction, ou s'il déborde vraiment.
+ */
+function titleCandidate(line) {
+  return !VERB_START.test(line) && line.length <= 70;
 }
 
 /**
@@ -114,7 +162,7 @@ export function parseRecipeText(raw) {
     if (durationOf(line) && line.length < 40) continue;
     const candidate = line.replace(/^#+\s*/, '').replace(/\*+/g, '').replace(/\s*:\s*$/, '').trim();
     if (!candidate || candidate.length > 80) break;
-    if (looksLikeStep(candidate, false)) break;
+    if (!titleCandidate(candidate)) break;
     const em = candidate.match(EMOJI_START);
     if (em) emoji = [...em[1]][0];
     name = candidate.replace(EMOJI_START, '').trim();
@@ -128,6 +176,11 @@ export function parseRecipeText(raw) {
   /* --------------------------------------------------------------- corps */
   let mode = 'ing';
   let seenStep = false;
+  // un en-tête « Ingrédients : » explicite fait autorité : tant qu'on n'a pas
+  // vu « Préparation », les lignes qui suivent sont des ingrédients, même si
+  // une ligne précédente a été prise pour une instruction
+  let explicitIng = false;
+  const components = detectComponents(lines);
 
   lines.forEach((line, index) => {
     if (index === titleIndex) return;
@@ -141,10 +194,13 @@ export function parseRecipeText(raw) {
     }
     if (ING_HEADER.test(line)) {
       mode = 'ing';
+      explicitIng = true;
+      seenStep = false;
       const inline = line.replace(/^[^:]*:\s*/, '');
       if (inline && inline !== line) {
         splitInline(inline).forEach((part) => {
-          const ing = toIngredient(part);
+          const { body, group } = splitComponent(part, components);
+          const ing = toIngredient(body, group);
           if (ing) ingredients.push(ing);
         });
       }
@@ -164,22 +220,29 @@ export function parseRecipeText(raw) {
       return;
     }
 
-    const body = line.replace(BULLET, '').trim();
+    const brut = line.replace(BULLET, '').trim();
+    const { body, group } = splitComponent(brut, components);
     const parsed = parseQuantity(body);
     const hasQty = !!parsed && parsed.qty > 0;
 
-    if (!seenStep && !looksLikeStep(body, hasQty)) {
+    // sous un en-tête explicite, seule une ligne qui ressemble franchement à
+    // une instruction fait basculer en mode étapes
+    const franchementEtape = !hasQty && (VERB_START.test(body) || body.length > 55);
+    const enIngredients = mode === 'ing' && (explicitIng ? !franchementEtape : !seenStep && !looksLikeStep(body, hasQty));
+
+    if (enIngredients) {
       if (!hasQty && body.includes(',')) {
         splitInline(body).forEach((part) => {
-          const ing = toIngredient(part);
+          const ing = toIngredient(part, group);
           if (ing) ingredients.push(ing);
         });
       } else if (parsed) {
-        ingredients.push(toIngredient(body));
+        ingredients.push(toIngredient(body, group));
       }
       return;
     }
 
+    mode = 'steps';
     seenStep = true;
     steps.push(cleanStep(line));
   });
@@ -189,10 +252,30 @@ export function parseRecipeText(raw) {
     emoji: emoji || '🍽️',
     servings,
     time,
-    ingredients,
+    ingredients: regrouper(ingredients),
     steps: steps.filter((s) => s.length > 1),
     notes: notes.join('\n'),
   };
+}
+
+/**
+ * Rassemble les ingrédients d'une même composante. Le texte source les
+ * entrelace parfois — une mozzarella sans annotation au milieu du bloc
+ * « poulet », des pains pita tout à la fin — et chaque composante doit
+ * apparaître d'un seul tenant, sous un seul sous-titre.
+ *
+ * Les ingrédients sans composante passent devant : ce sont les éléments de
+ * base, le reste détaille les préparations.
+ */
+function regrouper(ingredients) {
+  if (!ingredients.some((i) => i.group)) return ingredients;
+  const ordre = [];
+  for (const i of ingredients) {
+    const cle = i.group || '';
+    if (!ordre.includes(cle)) ordre.push(cle);
+  }
+  ordre.sort((a, b) => (a === '' ? -1 : b === '' ? 1 : 0));
+  return ordre.flatMap((cle) => ingredients.filter((i) => (i.group || '') === cle));
 }
 
 /* ------------------------------------------------------- collage en lot */

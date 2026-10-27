@@ -4,6 +4,43 @@ Le numéro affiché dans **Réglages** (et dans la colonne latérale sur grand �
 correspond à celui de `js/version.js`. Le cache hors ligne (`sw.js`) porte le même
 numéro : le changer suffit à faire récupérer la nouvelle version à l'app installée.
 
+## 1.10.0 — les recettes en plusieurs parties
+
+Une recette collée qui détaille une marinade, une salade et une sauce était jusqu'ici
+**entièrement perdue** : zéro ingrédient reconnu, trente-trois lignes empilées en étapes, pas
+de titre. Trois défauts se cumulaient.
+
+### Ce qui n'allait pas
+
+- **Un titre de six mots était pris pour une instruction.** « Wrap shawarma poulet fromage à
+  l'ail » déclenchait la règle « six mots ou plus = une étape », écrite pour les lignes du
+  corps. Le titre a maintenant son propre critère : on ne l'écarte que s'il commence comme une
+  instruction, ou s'il dépasse 70 caractères
+- **Une étape reconnue par erreur condamnait tout le reste.** Le drapeau interne passait à
+  « on est dans les étapes » et ne redescendait jamais, même après un en-tête
+  « Ingrédients : ». Cet en-tête fait désormais autorité : tant que « Préparation » n'est pas
+  vu, les lignes qui suivent sont des ingrédients, et seule une ligne qui ressemble franchement
+  à une instruction fait basculer
+- **Les parenthèses faussaient les prix.** `Sel (poulet)` était chiffré **au prix du poulet**,
+  et `Poivre (salade)` à celui de la salade. Un ingrédient à deux euros les cent grammes au
+  lieu de quelques centimes
+
+### Les composantes
+
+La parenthèse finale est désormais lue comme la **partie de la recette** à laquelle
+l'ingrédient appartient : marinade, salade, sauce, pâte, garniture…
+
+- Elle n'est retenue comme composante que si elle **revient au moins deux fois**, ou si c'est
+  un mot de composante usuel. `(400 g)`, `(râpé)` ou `(ou feuilletée)`, qui n'apparaissent
+  qu'une fois, restent dans le nom de l'ingrédient
+- Les ingrédients d'une même partie sont **rassemblés** : le texte source les entrelace
+  parfois, et chaque composante doit apparaître d'un seul tenant. Ceux sans composante passent
+  devant, ce sont les éléments de base
+- La fiche les affiche en **sous-titres**, et le partage les transporte — par lien comme par
+  texte, de sorte qu'une recette envoyée par Messages se recolle à l'identique
+
+Le sumac rejoint le barème de prix et la table nutritionnelle.
+
 ## 1.9.0 — « Compose ma semaine »
 
 Un assistant qui propose un menu complet à partir de quelques critères, et le pose sur les

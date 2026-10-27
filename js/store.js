@@ -32,6 +32,9 @@ function normalizeIngredient(ing) {
     qty: Number(ing.qty) || 0,
     unit: UNITS[ing.unit] ? ing.unit : 'piece',
     rayon: ing.rayon || guessRayon(ing.name || ''),
+    // partie de la recette à laquelle l'ingrédient appartient (marinade,
+    // sauce…), quand la recette collée en déclarait une
+    ...(ing.group ? { group: String(ing.group).trim() } : {}),
   };
 }
 

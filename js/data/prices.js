@@ -177,6 +177,7 @@ export const PRICE_CATALOG = [
   { key: 'paprika', label: 'Paprika', unit: 'kg', price: 40.00 },
   { key: 'cumin', label: 'Cumin', unit: 'kg', price: 40.00 },
   { key: 'curcuma', label: 'Curcuma', unit: 'kg', price: 40.00 },
+  { key: 'sumac', label: 'Sumac', unit: 'kg', price: 48.00 },
   { key: 'muscade', label: 'Noix de muscade', unit: 'kg', price: 60.00 },
   { key: 'cannelle', label: 'Cannelle', unit: 'kg', price: 45.00 },
   { key: 'origan', label: 'Origan', unit: 'kg', price: 40.00 },

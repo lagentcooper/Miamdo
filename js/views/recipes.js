@@ -284,7 +284,9 @@ export function openRecipeDetail(id) {
 
           <div class="section-title">Ingrédients <span class="count">· ${recipe.ingredients.length}</span></div>
           <div class="rows">
-            ${cost.lines.map((ing) => `
+            ${cost.lines.map((ing, i) => `
+              ${ing.group && ing.group !== cost.lines[i - 1]?.group
+                ? `<div class="row ing-group"><span class="grow">${escapeHtml(ing.group)}</span></div>` : ''}
               <div class="row">
                 <span class="grow">
                   <div class="primary">${escapeHtml(ing.name)}</div>
@@ -564,13 +566,20 @@ Ajouter les tomates…" data-steps>${escapeHtml(draft.steps.join('\n'))}</textar
 
   // utilisé par onRight (même portée de module)
   function readIngredients(root) {
-    draft.ingredients = [...root.querySelectorAll('[data-ing-row]')].map((row) => ({
-      id: row.dataset.ingRow,
-      name: row.querySelector('[data-ing-name]').value,
-      qty: Number(row.querySelector('[data-ing-qty]').value) || 0,
-      unit: row.querySelector('[data-ing-unit]').value,
-      rayon: guessRayon(row.querySelector('[data-ing-name]').value),
-    }));
+    // la composante n'a pas de champ : on la reprend sur la ligne d'origine
+    const groupes = new Map(draft.ingredients.map((i) => [i.id, i.group]));
+    draft.ingredients = [...root.querySelectorAll('[data-ing-row]')].map((row) => {
+      const id = row.dataset.ingRow;
+      const group = groupes.get(id);
+      return {
+        id,
+        name: row.querySelector('[data-ing-name]').value,
+        qty: Number(row.querySelector('[data-ing-qty]').value) || 0,
+        unit: row.querySelector('[data-ing-unit]').value,
+        rayon: guessRayon(row.querySelector('[data-ing-name]').value),
+        ...(group ? { group } : {}),
+      };
+    });
   }
 }
 
